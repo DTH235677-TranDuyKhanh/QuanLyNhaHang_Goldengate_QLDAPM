@@ -75,7 +75,18 @@ $foods_result = $conn->query($foods_sql);
                 <a class="navbar-brand fw-bold text-black" href="index.php">
                     <i class="fas fa-utensils me-2"></i>Nhà hàng Goldengate
                 </a>   
+            </div>
+    <!-- Đặt các nút đăng nhập và đăng ký ở bên phải -->
+        
+        <div class= "d-flex align-items-center">
+            <a href="login.php" class="btn btn-outline-dark me-2">
+                <i class="fas fa-sign-in-alt me-1"></i> Đăng nhập
+            </a>
+            <a href="register.php" class= "btn btn-outline-dark">
+                <i class="fas fa-user-plus me-1"></i> Đăng ký
+            </a>
         </div>
+    </div>
     </nav>
     <!-- Offcanvas Menu -->
     <div class="offcanvas offcanvas-start" tabindex="-1" id="offcanvasMenu" aria-labelledby="offcanvasMenuLabel">
