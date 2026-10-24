@@ -1,1 +1,3 @@
-<?php header('Location: public/index.php'); exit;
+<?php
+header("Location:public");
+?>
