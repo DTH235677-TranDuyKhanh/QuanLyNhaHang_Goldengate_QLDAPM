@@ -10,7 +10,7 @@ class ChiNhanh {
         // Chi nhánh mới: tạo sẵn dòng tồn kho = 0 cho mọi món
         DB::exec("INSERT INTO monan_chinhanh (chinhanh_id, monan_id, soluongton, conphucvu) SELECT ?, id, 0, 1 FROM monan", [$id]);
         return $id;
-    }
+    }  
     public static function sua($id, $ten, $diachi, $sdt, $mo, $dong) {
         return DB::exec("UPDATE chinhanh SET tenchinhanh=?, diachi=?, sodienthoai=?, giomocua=?, giodongcua=? WHERE id=?",
             [$ten, $diachi, $sdt, $mo, $dong, (int)$id]);
