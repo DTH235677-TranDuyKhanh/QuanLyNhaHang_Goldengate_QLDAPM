@@ -42,6 +42,17 @@ CREATE TABLE monan_chinhanh (
   FOREIGN KEY (monan_id) REFERENCES monan(id)
 ) ENGINE=InnoDB;
 
+CREATE TABLE slider (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  tieu_de VARCHAR(255) NOT NULL,
+  mota TEXT,
+  hinh_anh VARCHAR(255) NOT NULL,
+  nut_text VARCHAR(100) DEFAULT NULL,
+  nut_link VARCHAR(255) DEFAULT '#',
+  vitri INT NOT NULL DEFAULT 0,
+  trangthai TINYINT NOT NULL DEFAULT 1
+) ENGINE=InnoDB;
+
 -- loai: 1 = quản trị tổng, 2 = quản lý chi nhánh, 3 = khách hàng
 CREATE TABLE nguoidung (
   id INT AUTO_INCREMENT PRIMARY KEY,
@@ -140,6 +151,11 @@ INSERT INTO monan (id,tenmon,mota,giaban,nhom_id) VALUES
 
 INSERT INTO monan_chinhanh (chinhanh_id, monan_id, soluongton, conphucvu)
 SELECT c.id, m.id, 40, 1 FROM chinhanh c CROSS JOIN monan m;
+
+INSERT INTO slider (tieu_de, mota, hinh_anh, nut_text, nut_link, vitri, trangthai) VALUES
+('Hương vị Việt - Chuẩn nhà hàng', 'Bạn đang xem thực đơn của <strong>GoldenGate Quận 1</strong>. Có thể đổi chi nhánh ở góc trên bên phải.', 'https://images.unsplash.com/photo-1552566626-52f8b828add9?auto=format&fit=crop&w=1600&q=80', 'Xem thực đơn', '#menu', 1, 1),
+('Món ngon, phục vụ đúng chuẩn', 'Không gian ấm cúng, phục vụ nhanh, nguyên liệu tươi mỗi ngày.', 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=1600&q=80', 'Khám phá', '#menu', 2, 1),
+('Trải nghiệm ẩm thực Việt', 'Từ món ăn gia đình đến không gian thưởng thức hiện đại, đều dành cho bạn.', 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=1600&q=80', 'Đặt món ngay', '#menu', 3, 1);
 
 -- Mật khẩu mẫu: admin = Admin@123, quản lý = Quanly@123, khách = Khach@123
 INSERT INTO nguoidung (id,email,sodienthoai,matkhau,hoten,loai,chinhanh_id) VALUES

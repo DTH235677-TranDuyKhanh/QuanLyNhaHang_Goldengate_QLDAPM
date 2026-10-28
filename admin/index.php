@@ -111,6 +111,48 @@ switch ($action) {
     case 'doitrangthaimon':
         only_admin(); MonAn::doiTrangThai((int)post('id')); flash('success', 'Đã đổi trạng thái món.'); redirect('index.php?action=monan');
 
+    // ===== SLIDER =====
+    case 'slider':
+        only_admin();
+        aview('slider', ['ds' => Slider::tatCaAdmin(), 'edit' => !empty($_GET['edit']) ? Slider::laySo((int)$_GET['edit']) : null]);
+    case 'luuslider':
+        only_admin();
+        $id = (int)post('id');
+        $tieuDe = post('tieu_de');
+        $mota = post('mota');
+        $nutText = post('nut_text');
+        $nutLink = post('nut_link', '#');
+        $vitri = (int)post('vitri', 0);
+        if ($tieuDe === '') { flash('danger', 'Tiêu đề slide là bắt buộc.'); redirect('index.php?action=slider'); }
+        try {
+            $hinh = upload_image_to_dir('hinh_anh', 'slider');
+            if (!$hinh && $id) {
+                $cur = Slider::laySo($id);
+                $hinh = $cur['hinh_anh'] ?? null;
+            }
+            if (!$hinh) {
+                flash('danger', 'Vui lòng chọn ảnh cho slide.');
+                redirect('index.php?action=slider' . ($id ? '&edit=' . $id : ''));
+            }
+            if ($id) Slider::sua($id, $tieuDe, $mota, $hinh, $nutText, $nutLink, $vitri, (int)post('trangthai', 1));
+            else Slider::them($tieuDe, $mota, $hinh, $nutText, $nutLink, $vitri, (int)post('trangthai', 1));
+            flash('success', 'Đã lưu slide.');
+            redirect('index.php?action=slider');
+        } catch (RuntimeException $e) {
+            flash('danger', $e->getMessage());
+            redirect('index.php?action=slider' . ($id ? '&edit=' . $id : ''));
+        }
+    case 'doitrangthaislider':
+        only_admin();
+        Slider::doiTrangThai((int)post('id'));
+        flash('success', 'Đã đổi trạng thái slide.');
+        redirect('index.php?action=slider');
+    case 'xoaslider':
+        only_admin();
+        Slider::xoa((int)post('id'));
+        flash('success', 'Đã xóa slide.');
+        redirect('index.php?action=slider');
+
     // ===== TỒN KHO THEO CHI NHÁNH =====
     case 'tonkho':
         $cn = $isAdmin ? (int)($_GET['cn'] ?? 0) : $myCn;
