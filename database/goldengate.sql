@@ -78,6 +78,43 @@ CREATE TABLE diachi (
   FOREIGN KEY (nguoidung_id) REFERENCES nguoidung(id)
 ) ENGINE=InnoDB;
 
+CREATE TABLE datban (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  nguoidung_id INT DEFAULT NULL,
+  chinhanh_id INT NOT NULL,
+  hoten VARCHAR(255) NOT NULL,
+  sodienthoai VARCHAR(15) NOT NULL,
+  thoi_gian DATETIME NOT NULL,
+  so_khach TINYINT UNSIGNED NOT NULL,
+  ghichu VARCHAR(500) DEFAULT NULL,
+  trangthai TINYINT NOT NULL DEFAULT 0,
+  ngaytao DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  KEY idx_datban_cn_time (chinhanh_id, thoi_gian),
+  KEY idx_datban_user (nguoidung_id),
+  KEY idx_datban_status (trangthai),
+  FOREIGN KEY (nguoidung_id) REFERENCES nguoidung(id) ON DELETE SET NULL,
+  FOREIGN KEY (chinhanh_id) REFERENCES chinhanh(id)
+) ENGINE=InnoDB;
+
+CREATE TABLE voucher (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  ma VARCHAR(40) NOT NULL,
+  loai ENUM('phantram','tienmat') NOT NULL,
+  giatri DECIMAL(12,2) NOT NULL,
+  don_toi_thieu DECIMAL(12,0) NOT NULL DEFAULT 0,
+  giam_toi_da DECIMAL(12,0) DEFAULT NULL,
+  bat_dau DATETIME NOT NULL,
+  ket_thuc DATETIME NOT NULL,
+  gioi_han INT UNSIGNED DEFAULT NULL,
+  da_dung INT UNSIGNED NOT NULL DEFAULT 0,
+  chinhanh_id INT DEFAULT NULL,
+  trangthai TINYINT NOT NULL DEFAULT 1,
+  ngaytao DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_voucher_ma (ma),
+  KEY idx_voucher_active_dates (trangthai, bat_dau, ket_thuc),
+  FOREIGN KEY (chinhanh_id) REFERENCES chinhanh(id) ON DELETE SET NULL
+) ENGINE=InnoDB;
+
 -- hinhthuc: 1 tại quán, 2 mang đi, 3 giao hàng
 -- trangthai: 0 chờ xác nhận, 1 đã xác nhận, 2 đang chuẩn bị, 3 hoàn thành, 4 đã hủy
 CREATE TABLE donhang (
@@ -90,13 +127,16 @@ CREATE TABLE donhang (
   diachi VARCHAR(255) DEFAULT NULL,
   ngay DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   phigiao DECIMAL(12,0) NOT NULL DEFAULT 0,
+  voucher_id INT DEFAULT NULL,
+  giamgia DECIMAL(12,0) NOT NULL DEFAULT 0,
   tongtien DECIMAL(12,0) NOT NULL DEFAULT 0,
   trangthai TINYINT NOT NULL DEFAULT 0,
   ghichu VARCHAR(255) DEFAULT NULL,
   KEY idx_nd (nguoidung_id),
   KEY idx_cn_ngay (chinhanh_id, ngay),
   FOREIGN KEY (nguoidung_id) REFERENCES nguoidung(id),
-  FOREIGN KEY (chinhanh_id) REFERENCES chinhanh(id)
+  FOREIGN KEY (chinhanh_id) REFERENCES chinhanh(id),
+  FOREIGN KEY (voucher_id) REFERENCES voucher(id) ON DELETE SET NULL
 ) ENGINE=InnoDB;
 
 CREATE TABLE donhangct (

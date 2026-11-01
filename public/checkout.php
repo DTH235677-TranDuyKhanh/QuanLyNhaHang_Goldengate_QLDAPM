@@ -1,4 +1,9 @@
-<?php include 'inc/top.php'; $fee = (int)cfg('ship_fee'); $free = (int)cfg('free_ship_from'); ?>
+<?php
+include 'inc/top.php';
+$fee = (int)cfg('ship_fee');
+$free = (int)cfg('free_ship_from');
+$giamHienTai = (int)$voucherPreview['giamgia'];
+?>
 <h4 class="section-title mb-3">Thông tin đặt món</h4>
 <div class="row g-4">
   <div class="col-lg-7">
@@ -19,8 +24,16 @@
         </div>
         <div class="col-12" id="boxdc"><label class="form-label">Địa chỉ giao hàng</label><input class="form-control" name="diachi" value="<?= e($f['diachi']) ?>"></div>
         <div class="col-12"><label class="form-label">Ghi chú</label><input class="form-control" name="ghichu" maxlength="250" value="<?= e($f['ghichu']) ?>" placeholder="Ví dụ: ít cay, không hành..."></div>
+        <div class="col-12">
+          <label class="form-label" for="checkoutVoucher">Mã voucher</label>
+          <div class="input-group">
+            <input id="checkoutVoucher" class="form-control text-uppercase" name="voucher" maxlength="40" value="<?= e($f['voucher']) ?>" placeholder="Nhập mã giảm giá">
+            <button class="btn btn-outline-secondary" type="submit" name="kiemtra_voucher" value="1">Kiểm tra mã</button>
+          </div>
+          <?php if ($voucherError): ?><div class="form-text text-danger"><?= e($voucherError) ?></div><?php elseif ($voucherPreview['voucher']): ?><div class="form-text text-success">Áp dụng <?= e($voucherPreview['voucher']['ma']) ?>, giảm <?= money($giamHienTai) ?>.</div><?php else: ?><div class="form-text">Giảm giá áp dụng trên tiền món; phí giao hàng cộng sau khi giảm.</div><?php endif; ?>
+        </div>
       </div>
-      <button class="btn btn-gg btn-lg mt-3">Xác nhận đặt món</button>
+      <button class="btn btn-gg btn-lg mt-3" type="submit">Xác nhận đặt món</button>
     </form>
   </div>
   <div class="col-lg-5">
@@ -32,6 +45,7 @@
       <hr class="my-2">
       <div class="d-flex justify-content-between"><span>Tạm tính</span><span id="tam" data-v="<?= (int)$tam ?>"><?= money($tam) ?></span></div>
       <div class="d-flex justify-content-between"><span>Phí giao hàng</span><span id="phi">0đ</span></div>
+      <div class="d-flex justify-content-between <?= $giamHienTai ? '' : 'd-none' ?>" id="boxGiam"><span>Voucher giảm</span><span class="text-success" id="giam">-<?= money($giamHienTai) ?></span></div>
       <div class="d-flex justify-content-between fw-bold fs-5"><span>Tổng cộng</span><span class="price" id="tong"><?= money($tam) ?></span></div>
       <small class="text-muted">Giao hàng: <?= money($fee) ?>, miễn phí từ <?= money($free) ?>. Thanh toán khi nhận món.</small>
     </div>
@@ -39,14 +53,14 @@
 </div>
 <script>
 (function(){
-  var fee=<?= $fee ?>, free=<?= $free ?>, tam=parseInt(document.getElementById('tam').dataset.v,10);
+  var fee=<?= $fee ?>, free=<?= $free ?>, tam=parseInt(document.getElementById('tam').dataset.v,10), giam=<?= $giamHienTai ?>;
   function fmt(n){return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g,'.')+'đ';}
   function upd(){
     var ht=document.querySelector('input[name=hinhthuc]:checked').value;
     var p=(ht==='3' && tam<free)?fee:0;
     document.getElementById('boxdc').style.display=(ht==='3')?'block':'none';
     document.getElementById('phi').textContent=fmt(p);
-    document.getElementById('tong').textContent=fmt(tam+p);
+    document.getElementById('tong').textContent=fmt(tam+p-giam);
   }
   document.querySelectorAll('input[name=hinhthuc]').forEach(function(r){r.addEventListener('change',upd);});
   upd();

@@ -103,14 +103,36 @@ switch ($action) {
         unset($_SESSION['old_checkout']);
         $f = $old + [
             'hoten' => $user['hoten'] ?? '', 'sdt' => $user['sodienthoai'] ?? '',
-            'diachi' => $user ? NguoiDung::diaChiMacDinh($user['id']) : '', 'hinhthuc' => 2, 'ghichu' => '',
+            'diachi' => $user ? NguoiDung::diaChiMacDinh($user['id']) : '', 'hinhthuc' => 2, 'ghichu' => '', 'voucher' => '',
         ];
-        view('checkout', ['title' => 'Đặt món', 'dong' => $dong, 'tam' => GioHang::tamTinh($dong), 'f' => $f]);
+        $tam = GioHang::tamTinh($dong);
+        $voucherPreview = ['voucher' => null, 'giamgia' => 0];
+        $voucherError = null;
+        try { $voucherPreview = Voucher::tinhGiam($f['voucher'], $cnId, $tam); }
+        catch (RuntimeException $ex) { $voucherError = $ex->getMessage(); }
+        view('checkout', [
+            'title' => 'Đặt món', 'dong' => $dong, 'tam' => $tam, 'f' => $f,
+            'voucherPreview' => $voucherPreview, 'voucherError' => $voucherError,
+        ]);
 
     case 'xlthanhtoan':
         $dong = GioHang::dong($cnId);
         if (!$dong) redirect('index.php');
-        $f = ['hoten' => post('hoten'), 'sdt' => post('sdt'), 'diachi' => post('diachi'), 'hinhthuc' => (int)post('hinhthuc', '2'), 'ghichu' => post('ghichu')];
+        $f = [
+            'hoten' => post('hoten'), 'sdt' => post('sdt'), 'diachi' => post('diachi'),
+            'hinhthuc' => (int)post('hinhthuc', '2'), 'ghichu' => post('ghichu'),
+            'voucher' => strtoupper(post('voucher')),
+        ];
+        if (isset($_POST['kiemtra_voucher'])) {
+            $_SESSION['old_checkout'] = $f;
+            try {
+                $preview = Voucher::tinhGiam($f['voucher'], $cnId, GioHang::tamTinh($dong));
+                flash('success', $preview['voucher'] ? 'Voucher hợp lệ, giảm ' . money($preview['giamgia']) . '.' : 'Đã bỏ mã voucher.');
+            } catch (RuntimeException $ex) {
+                flash('danger', $ex->getMessage());
+            }
+            redirect('index.php?action=thanhtoan');
+        }
         $err = null;
         if ($f['hoten'] === '') $err = 'Vui lòng nhập họ tên.';
         elseif (!preg_match('/^0\d{9}$/', $f['sdt'])) $err = 'Số điện thoại phải gồm 10 chữ số, bắt đầu bằng 0.';
@@ -133,12 +155,14 @@ switch ($action) {
             $items = [];
             foreach ($dong as $d) $items[(int)$d['id']] = (int)$d['soluong'];
             $diachi = $f['hinhthuc'] === 3 ? $f['diachi'] : null;
-            $did = DonHang::tao($uid, $cnId, $f['hinhthuc'], $f['hoten'], $f['sdt'], $diachi, $f['ghichu'], $items);
+            $did = DonHang::tao(
+                $uid, $cnId, $f['hinhthuc'], $f['hoten'], $f['sdt'], $diachi, $f['ghichu'], $items, $f['voucher']
+            );
             if ($diachi) NguoiDung::luuDiaChi($uid, $diachi);
         } catch (RuntimeException $ex) {
             flash('danger', $ex->getMessage());
             $_SESSION['old_checkout'] = $f;
-            redirect('index.php?action=giohang');
+            redirect('index.php?action=thanhtoan');
         }
         GioHang::xoaTatCa();
         $_SESSION['don_vua_dat'] = $did;
@@ -234,6 +258,45 @@ switch ($action) {
         try { DonHang::khachHuy((int)post('id'), $user['id']); flash('success', 'Đã hủy đơn hàng.'); }
         catch (RuntimeException $ex) { flash('danger', $ex->getMessage()); }
         redirect('index.php?action=donhang');
+
+    // ===== ĐẶT BÀN =====
+    case 'datban':
+        $old = $_SESSION['old_booking'] ?? [];
+        unset($_SESSION['old_booking']);
+        $bookingForm = $old + [
+            'hoten' => $user['hoten'] ?? '', 'sdt' => $user['sodienthoai'] ?? '',
+            'chinhanh_id' => $cnId, 'thoi_gian' => '', 'so_khach' => 2, 'ghichu' => '',
+        ];
+        view('booking', [
+            'title' => 'Đặt bàn', 'bookingForm' => $bookingForm,
+            'bookings' => $user ? DatBan::cuaNguoiDung($user['id']) : [],
+        ]);
+
+    case 'xldatban':
+        $bookingForm = [
+            'hoten' => post('hoten'), 'sdt' => post('sdt'),
+            'chinhanh_id' => (int)post('chinhanh_id'), 'thoi_gian' => post('thoi_gian'),
+            'so_khach' => (int)post('so_khach'), 'ghichu' => post('ghichu'),
+        ];
+        try {
+            DatBan::tao($bookingForm, $user['id'] ?? null);
+            flash('success', 'Đã gửi yêu cầu đặt bàn. Nhà hàng sẽ liên hệ xác nhận với bạn.');
+        } catch (RuntimeException $ex) {
+            $_SESSION['old_booking'] = $bookingForm;
+            flash('danger', $ex->getMessage());
+            redirect('index.php?action=datban');
+        }
+        redirect('index.php?action=datban');
+
+    case 'huydatban':
+        need_login();
+        try {
+            DatBan::khachHuy((int)post('id'), $user['id']);
+            flash('success', 'Đã hủy yêu cầu đặt bàn.');
+        } catch (RuntimeException $ex) {
+            flash('danger', $ex->getMessage());
+        }
+        redirect('index.php?action=datban');
 
     case 'tracuu':
         $d = null; $ct = [];

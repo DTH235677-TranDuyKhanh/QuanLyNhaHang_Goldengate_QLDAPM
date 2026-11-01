@@ -22,11 +22,16 @@ Trang quản trị: `http://localhost/goldengate/admin/`
 ## Chức năng
 **Khách hàng**: chọn chi nhánh · xem thực đơn theo nhóm / tìm kiếm · giỏ hàng · đặt món (tại quán / mang đi / giao hàng, có phí giao) ·
 đặt không cần tài khoản · đăng ký / đăng nhập · lịch sử đơn · hủy đơn chờ xác nhận · tra cứu đơn bằng mã + SĐT ·
+đặt bàn chờ nhà hàng xác nhận · nhập voucher giảm giá tại thanh toán ·
 **Cá nhân hóa: "Gọi lại món quen", "Có thể bạn sẽ thích", "Đặt lại đơn gần nhất"**.
 
 **Quản trị tổng**: chi nhánh · nhóm món · món ăn (có ảnh) · tồn kho & thực đơn riêng từng chi nhánh · đơn hàng toàn chuỗi ·
-người dùng/nhân sự · báo cáo doanh thu theo chi nhánh, ngày, top món.
-**Quản lý chi nhánh**: chỉ thấy và xử lý đơn, tồn kho, báo cáo của chi nhánh mình.
+người dùng/nhân sự · voucher (giới hạn theo thời hạn, giá trị đơn, lượt dùng, chi nhánh) · báo cáo doanh thu theo chi nhánh, ngày, top món.
+**Quản lý chi nhánh**: chỉ thấy và xử lý đơn, yêu cầu đặt bàn, tồn kho, báo cáo của chi nhánh mình.
+
+## Cập nhật cơ sở dữ liệu hiện có
+Nếu đã cài bản trước, hãy sao lưu CSDL rồi chạy **một lần** file `database/migrations/202606_add_bookings_and_vouchers.sql` trong phpMyAdmin/CLI.
+Không import lại `database/goldengate.sql` trên CSDL đang sử dụng vì file khởi tạo này tạo mới CSDL và xóa CSDL cùng tên trước đó.
 
 ## Cấu trúc
 ```
@@ -36,7 +41,7 @@ model/    truy vấn dữ liệu và logic nghiệp vụ
 public/   website khách hàng
 admin/    trang quản trị
 api/      các endpoint API dùng chung cơ sở dữ liệu chính
-database/ CSDL chính của ứng dụng: goldengate.sql
+database/ CSDL chính (goldengate.sql) và migration (migrations/)
 uploads/  ảnh tải lên (món ăn, slider)
 docs/     tài liệu dự án
 ```

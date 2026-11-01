@@ -134,8 +134,8 @@ switch ($action) {
                 flash('danger', 'Vui lòng chọn ảnh cho slide.');
                 redirect('index.php?action=slider' . ($id ? '&edit=' . $id : ''));
             }
-            if ($id) Slider::sua($id, $tieuDe, $mota, $hinh, $nutText, $nutLink, $vitri, (int)post('trangthai', 1));
-            else Slider::them($tieuDe, $mota, $hinh, $nutText, $nutLink, $vitri, (int)post('trangthai', 1));
+            if ($id) Slider::sua($id, $tieuDe, $mota, $hinh, $nutText, $nutLink, $vitri, (int)post('trangthai', 0));
+            else Slider::them($tieuDe, $mota, $hinh, $nutText, $nutLink, $vitri, (int)post('trangthai', 0));
             flash('success', 'Đã lưu slide.');
             redirect('index.php?action=slider');
         } catch (RuntimeException $e) {
@@ -180,6 +180,46 @@ switch ($action) {
         try { DonHang::capNhatTrangThai((int)post('id'), (int)post('trangthai'), $myCn); flash('success', 'Đã cập nhật trạng thái đơn.'); }
         catch (RuntimeException $e) { flash('danger', $e->getMessage()); }
         redirect('index.php?action=chitietdon&id=' . (int)post('id'));
+
+    // ===== ĐẶT BÀN =====
+    case 'datban':
+        $cn = $isAdmin ? (int)($_GET['cn'] ?? 0) : $myCn;
+        $tt = $_GET['tt'] ?? '';
+        aview('datban', [
+            'ds' => DatBan::danhSach($cn ?: null, $tt === '' ? null : (int)$tt, 200),
+            'cn' => $cn, 'tt' => $tt, 'cns' => $isAdmin ? ChiNhanh::tatCa() : [],
+        ]);
+    case 'capnhatdatban':
+        try {
+            DatBan::capNhatTrangThai((int)post('id'), (int)post('trangthai'), $myCn);
+            flash('success', 'Đã cập nhật trạng thái yêu cầu đặt bàn.');
+        } catch (RuntimeException $e) {
+            flash('danger', $e->getMessage());
+        }
+        redirect('index.php?action=datban');
+
+    // ===== VOUCHER =====
+    case 'voucher':
+        only_admin();
+        aview('voucher', [
+            'ds' => Voucher::tatCa(),
+            'edit' => !empty($_GET['edit']) ? Voucher::laySo((int)$_GET['edit']) : null,
+            'cns' => ChiNhanh::tatCa(),
+        ]);
+    case 'luuvoucher':
+        only_admin();
+        try {
+            Voucher::luu($_POST);
+            flash('success', 'Đã lưu voucher.');
+        } catch (RuntimeException $e) {
+            flash('danger', $e->getMessage());
+        }
+        redirect('index.php?action=voucher' . ((int)post('id') ? '&edit=' . (int)post('id') : ''));
+    case 'doitrangthaivoucher':
+        only_admin();
+        if (Voucher::doiTrangThai((int)post('id'))) flash('success', 'Đã đổi trạng thái voucher.');
+        else flash('danger', 'Không tìm thấy voucher.');
+        redirect('index.php?action=voucher');
 
     // ===== NGƯỜI DÙNG =====
     case 'nguoidung':
