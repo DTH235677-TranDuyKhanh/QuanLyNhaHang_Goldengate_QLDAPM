@@ -22,7 +22,7 @@
 Yêu cầu phi chức năng: tải trang dưới 3 giây; không bán vượt tồn kho; mật khẩu băm; chạy trên trình duyệt di động.
 
 ## Giai đoạn 3 - Thiết kế (Tuần 3)
-- CSDL: 9 bảng (`chinhanh, nhomon, monan, monan_chinhanh, nguoidung, diachi, donhang, donhangct, luotxem_nguoidung`) - xem `data/goldengate.sql`.
+- CSDL: 10 bảng (`chinhanh, nhomon, monan, monan_chinhanh, slider, nguoidung, diachi, donhang, donhangct, luotxem_nguoidung`) - xem `database/goldengate.sql`.
 - Quyết định thiết kế chính:
   1. Tồn kho nằm ở `monan_chinhanh` (mỗi chi nhánh một số liệu và có thể ngừng phục vụ món riêng).
   2. `donhangct` lưu cả tên món và đơn giá tại thời điểm đặt, đổi giá sau này không làm sai lịch sử.

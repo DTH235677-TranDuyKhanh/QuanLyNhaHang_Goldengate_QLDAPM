@@ -1,30 +1,25 @@
 <?php
-// Cho phép gọi API từ các nguồn khác (CORS) nếu tách biệt Frontend/Backend
 header('Access-Control-Allow-Origin: *');
 header('Content-Type: application/json; charset=UTF-8');
 
-require_once '../config/db.php';
+require_once __DIR__ . '/../core/bootstrap.php';
 
 try {
-    // Truy vấn lấy danh sách món ăn kết hợp với bảng danh mục
-    $sql = "SELECT f.food_id, f.food_name, f.price, f.status, f.image, c.category_name 
-            FROM foods f 
-            JOIN categories c ON f.category_id = c.category_id";
-    
-    $stmt = $pdo->prepare($sql);
-    $stmt->execute();
-    $foods = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
+    $foods = DB::all("SELECT m.id AS food_id, m.tenmon AS food_name, m.giaban AS price,
+                             CASE WHEN m.trangthai = 1 THEN 'available' ELSE 'sold_out' END AS status,
+                             m.hinhanh AS image, n.tennhom AS category_name
+                      FROM monan m
+                      JOIN nhomon n ON n.id = m.nhom_id
+                      WHERE m.trangthai = 1
+                      ORDER BY m.id");
     echo json_encode([
         'status' => 'success',
         'data' => $foods
     ], JSON_UNESCAPED_UNICODE);
-
-} catch (Exception $e) {
+} catch (PDOException $e) {
     http_response_code(500);
     echo json_encode([
         'status' => 'error',
-        'message' => $e->getMessage()
+        'message' => 'Không thể tải danh sách món ăn.'
     ], JSON_UNESCAPED_UNICODE);
 }
-?>

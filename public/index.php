@@ -22,7 +22,6 @@ function view($name, $vars = []) {
     include __DIR__ . '/' . $name . '.php';
     exit;
 }
-function can_login() { return is_login(); }
 function need_login() {
     if (!is_login()) { flash('warning', 'Vui lòng đăng nhập để tiếp tục.'); redirect('index.php?action=dangnhap'); }
 }

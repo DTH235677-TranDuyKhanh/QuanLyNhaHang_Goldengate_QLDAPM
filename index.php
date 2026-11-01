@@ -1,4 +1,1 @@
-<?php
-// test clone
-header("Location:public");
-?>
+<?php header('Location: public/index.php'); exit;

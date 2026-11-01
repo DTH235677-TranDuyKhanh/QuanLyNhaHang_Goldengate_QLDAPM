@@ -9,8 +9,6 @@ body { background: var(--gg-cream); color:#2b2620; }
 .btn-outline-gg { border-color: var(--gg-gold); color: var(--gg-gold); }
 .btn-outline-gg:hover { background: var(--gg-gold); color:#fff; }
 .text-gg { color: var(--gg-gold) !important; }
-.hero { background: linear-gradient(120deg,#1f1a14 0%,#3b2d17 100%); color:#fff; border-radius:1rem; }
-.hero h1 { color:#f0c24b; }
 .hero-slider { position: relative; }
 .hero-slider .carousel-inner { background: linear-gradient(120deg,#1f1a14 0%,#3b2d17 100%); }
 .hero-slider .hero-image { height: 420px; object-fit: cover; filter: brightness(0.7) saturate(1.05); }
