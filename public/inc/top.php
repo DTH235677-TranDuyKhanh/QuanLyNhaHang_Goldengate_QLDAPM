@@ -25,6 +25,7 @@
           </ul>
         </li>
         <li class="nav-item"><a class="nav-link" href="index.php?action=tracuu">Tra cứu đơn</a></li>
+        <li class="nav-item"><a class="nav-link" href="index.php?action=datban">Đặt bàn</a></li>
       </ul>
       <form class="d-flex me-3" method="get" action="index.php">
         <input type="hidden" name="action" value="timkiem">

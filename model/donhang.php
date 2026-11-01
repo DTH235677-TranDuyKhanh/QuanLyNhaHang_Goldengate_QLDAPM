@@ -1,7 +1,7 @@
 <?php
 class DonHang {
-    // Tạo đơn trong 1 giao dịch: khóa dòng tồn kho -> kiểm tra -> ghi đơn -> trừ kho
-    public static function tao($uid, $cn, $hinhthuc, $hoten, $sdt, $diachi, $ghichu, array $items) {
+    // Lock inventory and voucher, then create the order and update both atomically.
+    public static function tao($uid, $cn, $hinhthuc, $hoten, $sdt, $diachi, $ghichu, array $items, $voucherCode = '') {
         if (!$items) throw new RuntimeException('Giỏ hàng trống.');
         ksort($items);   // khóa theo thứ tự cố định để tránh deadlock
         $pdo = DB::pdo();
@@ -24,9 +24,18 @@ class DonHang {
                 $lines[] = [(int)$id, $r['tenmon'], $r['giaban'], $sl, $tt];
             }
             $phi = GioHang::phiGiao($hinhthuc, $tam);
-            $did = DB::insert("INSERT INTO donhang (nguoidung_id, chinhanh_id, hinhthuc, hoten_nhan, sodt_nhan, diachi, phigiao, tongtien, ghichu)
-                               VALUES (?,?,?,?,?,?,?,?,?)",
-                [(int)$uid, (int)$cn, (int)$hinhthuc, $hoten, $sdt, $diachi ?: null, $phi, $tam + $phi, $ghichu ?: null]);
+            $voucherResult = Voucher::tinhGiam($voucherCode, $cn, $tam, true);
+            $voucher = $voucherResult['voucher'];
+            $discount = $voucherResult['giamgia'];
+            $total = $tam + $phi - $discount;
+            $did = DB::insert("INSERT INTO donhang
+                (nguoidung_id, chinhanh_id, hinhthuc, hoten_nhan, sodt_nhan, diachi, phigiao, voucher_id, giamgia, tongtien, ghichu)
+                VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+                [(int)$uid, (int)$cn, (int)$hinhthuc, $hoten, $sdt, $diachi ?: null, $phi,
+                 $voucher ? (int)$voucher['id'] : null, $discount, $total, $ghichu ?: null]);
+            if ($voucher && Voucher::danhDauDaDung($voucher['id']) !== 1) {
+                throw new RuntimeException('Không thể áp dụng voucher do đã hết lượt sử dụng.');
+            }
             foreach ($lines as [$mid, $ten, $gia, $sl, $tt]) {
                 DB::exec("INSERT INTO donhangct (donhang_id, monan_id, tenmon, dongia, soluong, thanhtien) VALUES (?,?,?,?,?,?)",
                     [$did, $mid, $ten, $gia, $sl, $tt]);
@@ -78,15 +87,23 @@ class DonHang {
     }
 
     public static function laySo($id) {
-        return DB::one("SELECT d.*, c.tenchinhanh FROM donhang d JOIN chinhanh c ON c.id = d.chinhanh_id WHERE d.id = ?", [(int)$id]);
+        return DB::one("SELECT d.*, c.tenchinhanh, v.ma AS voucher_ma
+                        FROM donhang d
+                        JOIN chinhanh c ON c.id = d.chinhanh_id
+                        LEFT JOIN voucher v ON v.id = d.voucher_id
+                        WHERE d.id = ?", [(int)$id]);
     }
     public static function chiTiet($id) { return DB::all("SELECT * FROM donhangct WHERE donhang_id = ? ORDER BY id", [(int)$id]); }
     public static function cuaNguoiDung($uid) {
-        return DB::all("SELECT d.*, c.tenchinhanh FROM donhang d JOIN chinhanh c ON c.id = d.chinhanh_id
+        return DB::all("SELECT d.*, c.tenchinhanh, v.ma AS voucher_ma
+                        FROM donhang d JOIN chinhanh c ON c.id = d.chinhanh_id
+                        LEFT JOIN voucher v ON v.id = d.voucher_id
                         WHERE d.nguoidung_id = ? ORDER BY d.id DESC", [(int)$uid]);
     }
     public static function traCuu($id, $sdt) {
-        return DB::one("SELECT d.*, c.tenchinhanh FROM donhang d JOIN chinhanh c ON c.id = d.chinhanh_id
+        return DB::one("SELECT d.*, c.tenchinhanh, v.ma AS voucher_ma
+                        FROM donhang d JOIN chinhanh c ON c.id = d.chinhanh_id
+                        LEFT JOIN voucher v ON v.id = d.voucher_id
                         WHERE d.id = ? AND d.sodt_nhan = ?", [(int)$id, $sdt]);
     }
     // Danh sách cho quản trị (lọc theo chi nhánh/trạng thái)
