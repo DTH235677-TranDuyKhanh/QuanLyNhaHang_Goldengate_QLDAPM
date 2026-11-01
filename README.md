@@ -5,7 +5,7 @@ PHP thuần (PDO) + MySQL + Bootstrap 5. Phát triển từ nền bài thực h�
 ## Cài đặt (XAMPP / Laragon)
 1. Yêu cầu: **PHP 7.4 trở lên** (khuyến nghị 8.x), MySQL/MariaDB, bật extension `pdo_mysql` và `fileinfo`.
 2. Copy thư mục `goldengate` vào `htdocs` (XAMPP) hoặc `www` (Laragon).
-3. Mở phpMyAdmin → tab **Nhập (Import)** → chọn `data/goldengate.sql` → Thực hiện.
+3. Mở phpMyAdmin → tab **Nhập (Import)** → chọn `database/goldengate.sql` → Thực hiện.
    (File tự tạo CSDL `goldengate` cùng dữ liệu mẫu.)
 4. Sửa `config/config.php` nếu user/mật khẩu MySQL khác mặc định.
 5. Mở trình duyệt: `http://localhost/goldengate/`
@@ -30,10 +30,15 @@ người dùng/nhân sự · báo cáo doanh thu theo chi nhánh, ngày, top mó
 
 ## Cấu trúc
 ```
-config/   cấu hình (DB, phí giao)         core/    bootstrap + hàm tiện ích (CSRF, flash, upload)
-model/    DB, MonAn, DonHang, GoiY...     public/  website khách hàng (index.php là controller)
-admin/    trang quản trị                  data/    goldengate.sql
-uploads/  ảnh món ăn                      docs/    tài liệu giai đoạn dự án
+config/   cấu hình ứng dụng và kết nối cơ sở dữ liệu
+core/     bootstrap và hàm dùng chung (CSRF, flash, upload)
+model/    truy vấn dữ liệu và logic nghiệp vụ
+public/   website khách hàng
+admin/    trang quản trị
+api/      các endpoint API dùng chung cơ sở dữ liệu chính
+database/ CSDL chính của ứng dụng: goldengate.sql
+uploads/  ảnh tải lên (món ăn, slider)
+docs/     tài liệu dự án
 ```
 
 ## Bảo mật đã áp dụng

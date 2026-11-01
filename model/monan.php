@@ -44,6 +44,11 @@ class MonAn {
     }
     public static function sua($id, $ten, $mota, $gia, $nhom, $hinh = null) {
         if ($hinh) {
+            $cur = self::laySo((int)$id);
+            if ($cur && !empty($cur['hinhanh']) && $cur['hinhanh'] !== $hinh && !preg_match('/^https?:\/\//i', (string)$cur['hinhanh'])) {
+                $oldFile = ROOT . '/uploads/monan/' . basename((string)$cur['hinhanh']);
+                if (is_file($oldFile)) unlink($oldFile);
+            }
             return DB::exec("UPDATE monan SET tenmon=?, mota=?, giaban=?, nhom_id=?, hinhanh=? WHERE id=?",
                 [$ten, $mota, $gia, (int)$nhom, $hinh, (int)$id]);
         }

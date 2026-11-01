@@ -22,7 +22,6 @@ function view($name, $vars = []) {
     include __DIR__ . '/' . $name . '.php';
     exit;
 }
-function can_login() { return is_login(); }
 function need_login() {
     if (!is_login()) { flash('warning', 'Vui lòng đăng nhập để tiếp tục.'); redirect('index.php?action=dangnhap'); }
 }
@@ -252,5 +251,20 @@ switch ($action) {
         $menu = [];
         foreach (MonAn::layTheoChiNhanh($cnId) as $m) $menu[$m['tennhom']][] = $m;
         $donCu = $user ? GoiY::donGanNhat($user['id']) : null;
-        view('main', ['title' => 'Trang chủ', 'goiy' => $goiy, 'menu' => $menu, 'donCu' => $donCu]);
+        $slides = Slider::tatCa();
+        if (!$slides) {
+            $slides = [
+                [
+                    'id' => 0,
+                    'tieu_de' => 'Hương vị Việt - Chuẩn nhà hàng',
+                    'mota' => 'Bạn đang xem thực đơn của <strong>' . e($cb['tenchinhanh'] ?? '') . '</strong>. Có thể đổi chi nhánh ở góc trên bên phải.',
+                    'hinh_anh' => 'https://images.unsplash.com/photo-1552566626-52f8b828add9?auto=format&fit=crop&w=1600&q=80',
+                    'nut_text' => 'Xem thực đơn',
+                    'nut_link' => '#menu',
+                    'trangthai' => 1,
+                    'vitri' => 0,
+                ],
+            ];
+        }
+        view('main', ['title' => 'Trang chủ', 'goiy' => $goiy, 'menu' => $menu, 'donCu' => $donCu, 'slides' => $slides]);
 }

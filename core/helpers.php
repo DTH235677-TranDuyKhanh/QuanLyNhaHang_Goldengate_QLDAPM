@@ -55,9 +55,9 @@ function trangthai_don($t) {
 }
 function hinhthuc_don($h) { return [1 => 'Dùng tại quán', 2 => 'Mang đi', 3 => 'Giao hàng'][(int)$h] ?? '—'; }
 
-// ----- Upload ảnh món ăn -----
+// ----- Upload ảnh -----
 // Trả về tên file đã lưu, null nếu không có file; ném RuntimeException nếu file không hợp lệ.
-function upload_image($field) {
+function upload_image_to_dir($field, $dirName) {
     if (empty($_FILES[$field]) || $_FILES[$field]['error'] === UPLOAD_ERR_NO_FILE) return null;
     $f = $_FILES[$field];
     if ($f['error'] !== UPLOAD_ERR_OK) throw new RuntimeException('Tải ảnh lên thất bại.');
@@ -65,13 +65,15 @@ function upload_image($field) {
     $mime = (new finfo(FILEINFO_MIME_TYPE))->file($f['tmp_name']);
     $ext = ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/webp' => 'webp'][$mime] ?? null;
     if (!$ext) throw new RuntimeException('Chỉ chấp nhận ảnh JPG, PNG hoặc WEBP.');
-    $dir = ROOT . '/uploads/monan';
+    $dir = ROOT . '/uploads/' . $dirName;
     if (!is_dir($dir)) mkdir($dir, 0755, true);
     $name = bin2hex(random_bytes(8)) . '.' . $ext;
     if (!move_uploaded_file($f['tmp_name'], $dir . '/' . $name)) throw new RuntimeException('Không lưu được ảnh.');
     return $name;
 }
+function upload_image($field) { return upload_image_to_dir($field, 'monan'); }
 function img_url($name) { return $name ? '../uploads/monan/' . rawurlencode($name) : null; }
+function img_url_dir($name, $dirName) { return $name ? '../uploads/' . $dirName . '/' . rawurlencode($name) : null; }
 
 // ----- Cookie món đã xem (khách chưa đăng nhập) -----
 function viewed_cookie() {

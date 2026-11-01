@@ -3,12 +3,11 @@ class ThongKe {
     // $cn = null: toàn hệ thống; có giá trị: chỉ chi nhánh đó
     public static function tongQuan($cn = null) {
         $w = $cn ? " AND chinhanh_id = " . (int)$cn : "";
-        $wm = $cn ? " AND chinhanh_id = " . (int)$cn : "";
         return [
             'don_homnay'      => (int)DB::val("SELECT COUNT(*) FROM donhang WHERE DATE(ngay) = CURDATE() $w"),
             'doanhthu_homnay' => (float)DB::val("SELECT COALESCE(SUM(tongtien),0) FROM donhang WHERE DATE(ngay) = CURDATE() AND trangthai <> 4 $w"),
             'don_cho'         => (int)DB::val("SELECT COUNT(*) FROM donhang WHERE trangthai = 0 $w"),
-            'sap_het'         => (int)DB::val("SELECT COUNT(*) FROM monan_chinhanh WHERE conphucvu = 1 AND soluongton <= 5 $wm"),
+            'sap_het'         => (int)DB::val("SELECT COUNT(*) FROM monan_chinhanh WHERE conphucvu = 1 AND soluongton <= 5 $w"),
         ];
     }
     public static function doanhThuTheoChiNhanh($days = 30) {

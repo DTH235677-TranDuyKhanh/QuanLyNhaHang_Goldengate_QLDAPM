@@ -45,13 +45,6 @@ class NguoiDung {
         DB::exec("UPDATE diachi SET macdinh = 0 WHERE nguoidung_id = ?", [(int)$uid]);
         DB::insert("INSERT INTO diachi (nguoidung_id, diachi, macdinh) VALUES (?,?,1)", [(int)$uid, $diachi]);
     }
-    public static function doiMatKhau($uid, $cu, $moi) {
-        $u = self::laySo($uid);
-        if (!$u || !password_verify($cu, $u['matkhau'])) return false;
-        DB::exec("UPDATE nguoidung SET matkhau = ? WHERE id = ?", [password_hash($moi, PASSWORD_DEFAULT), (int)$uid]);
-        return true;
-    }
-
     // ---------- Quản trị ----------
     public static function danhSach() {
         return DB::all("SELECT u.*, c.tenchinhanh FROM nguoidung u LEFT JOIN chinhanh c ON c.id = u.chinhanh_id
