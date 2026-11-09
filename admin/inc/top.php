@@ -13,7 +13,7 @@
     <div class="admin-sidebar-inner">
       <a class="admin-brand" href="index.php">
         <span class="admin-brand-mark">G</span>
-        <span>GOLDENGATE</span>
+        <span>OLDENGATE</span>
       </a>
       <div class="admin-user-card">
         <div class="admin-user-name"><?= e($user['hoten']) ?></div>
