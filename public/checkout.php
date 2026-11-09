@@ -22,6 +22,17 @@ $giamHienTai = (int)$voucherPreview['giamgia'];
             </div>
           <?php endforeach; ?>
         </div>
+        <div class="col-12">
+          <label class="form-label d-block">Thanh toán *</label>
+          <?php $paymentMethods = ['cod' => 'Thanh toán khi nhận món']; if (VnPay::daCauHinhDayDu()) $paymentMethods['vnpay'] = 'Thanh toán trực tuyến qua VNPay'; ?>
+          <?php foreach ($paymentMethods as $method => $label): ?>
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="phuongthuc_tt" id="pay-<?= e($method) ?>" value="<?= e($method) ?>" <?= ($f['phuongthuc_tt'] ?? 'cod') === $method || ($method === 'cod' && !VnPay::daCauHinhDayDu()) ? 'checked' : '' ?> required>
+              <label class="form-check-label" for="pay-<?= e($method) ?>"><?= e($label) ?></label>
+            </div>
+          <?php endforeach; ?>
+          <?php if (!VnPay::daCauHinhDayDu()): ?><div class="form-text">VNPay sẽ được bật sau khi cấu hình merchant, secret và các địa chỉ HTTPS.</div><?php endif; ?>
+        </div>
         <div class="col-12" id="boxdc"><label class="form-label">Địa chỉ giao hàng</label><input class="form-control" name="diachi" value="<?= e($f['diachi']) ?>"></div>
         <div class="col-12"><label class="form-label">Ghi chú</label><input class="form-control" name="ghichu" maxlength="250" value="<?= e($f['ghichu']) ?>" placeholder="Ví dụ: ít cay, không hành..."></div>
         <div class="col-12">
@@ -47,7 +58,7 @@ $giamHienTai = (int)$voucherPreview['giamgia'];
       <div class="d-flex justify-content-between"><span>Phí giao hàng</span><span id="phi">0đ</span></div>
       <div class="d-flex justify-content-between <?= $giamHienTai ? '' : 'd-none' ?>" id="boxGiam"><span>Voucher giảm</span><span class="text-success" id="giam">-<?= money($giamHienTai) ?></span></div>
       <div class="d-flex justify-content-between fw-bold fs-5"><span>Tổng cộng</span><span class="price" id="tong"><?= money($tam) ?></span></div>
-      <small class="text-muted">Giao hàng: <?= money($fee) ?>, miễn phí từ <?= money($free) ?>. Thanh toán khi nhận món.</small>
+      <small class="text-muted">Giao hàng: <?= money($fee) ?>, miễn phí từ <?= money($free) ?>. Thanh toán trực tuyến chỉ được xác nhận từ thông báo máy chủ VNPay.</small>
     </div>
   </div>
 </div>

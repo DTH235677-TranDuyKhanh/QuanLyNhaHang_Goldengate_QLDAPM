@@ -23,7 +23,7 @@
       <nav>
     <?php
       $menu = [['dashboard', '📊 Tổng quan', 1], ['donhang', '🧾 Đơn hàng', 1], ['datban', '🪑 Đặt bàn', 1], ['tonkho', '📦 Tồn kho chi nhánh', 1], ['baocao', '📈 Báo cáo', 1],
-               ['voucher', '🎟 Voucher', 0],
+               ['voucher', '🎟 Voucher', 0], ['sukien', '🎉 Sự kiện & ưu đãi', 0], ['danhgia', '⭐ Phản hồi & đánh giá', 0],
                ['monan', '🍜 Món ăn', 0], ['slider', '🖼 Slider', 0], ['nhomon', '🗂 Nhóm món', 0], ['chinhanh', '🏬 Chi nhánh', 0], ['nguoidung', '👥 Người dùng', 0]];
       foreach ($menu as [$k, $lb, $all]) { if (!$all && !$isAdmin) continue; ?>
         <a href="index.php?action=<?= $k ?>" class="admin-nav-link <?= $action === $k ? 'active' : '' ?>"><?= $lb ?></a>

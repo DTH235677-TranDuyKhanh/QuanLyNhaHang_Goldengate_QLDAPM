@@ -44,7 +44,10 @@
                   <td class="text-nowrap"><?= date('d/m/Y H:i', strtotime($booking['thoi_gian'])) ?></td>
                   <td><?= e($booking['tenchinhanh']) ?></td>
                   <td><?= (int)$booking['so_khach'] ?></td>
-                  <td><span class="badge text-bg-<?= e($color) ?>"><?= e($label) ?></span></td>
+                  <td>
+                    <span class="badge text-bg-<?= e($color) ?>"><?= e($label) ?></span>
+                    <?php if (!empty($booking['lichsu_moi'])): ?><div class="small text-muted mt-1"><?= e($booking['lichsu_moi']) ?></div><?php endif; ?>
+                  </td>
                   <td>
                     <?php if ((int)$booking['trangthai'] === DatBan::CHO_XAC_NHAN): ?>
                       <form method="post" action="index.php" onsubmit="return confirm('Hủy yêu cầu đặt bàn này?')">

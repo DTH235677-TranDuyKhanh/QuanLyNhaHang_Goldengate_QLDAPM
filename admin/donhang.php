@@ -38,7 +38,7 @@
     </div>
     <div class="table-responsive">
       <table class="table">
-        <thead><tr><th>Mã đơn</th><th>Thời gian</th><th>Chi nhánh</th><th>Khách hàng</th><th>Hình thức</th><th class="text-end">Tổng tiền</th><th>Trạng thái</th><th></th></tr></thead>
+        <thead><tr><th>Mã đơn</th><th>Thời gian</th><th>Chi nhánh</th><th>Khách hàng</th><th>Hình thức</th><th>Thanh toán</th><th class="text-end">Tổng tiền</th><th>Trạng thái</th><th></th></tr></thead>
         <tbody>
           <?php foreach ($ds as $d): [$lb, $cl] = trangthai_don($d['trangthai']); ?>
             <tr>
@@ -47,12 +47,14 @@
               <td><?= e($d['tenchinhanh']) ?></td>
               <td><?= e($d['hoten_nhan']) ?><br><small class="text-muted"><?= e($d['sodt_nhan']) ?></small></td>
               <td><?= e(hinhthuc_don($d['hinhthuc'])) ?></td>
+              <?php [$paymentLabel, $paymentColor] = trangthai_thanh_toan($d['trangthai_tt']); ?>
+              <td><span class="badge text-bg-<?= e($paymentColor) ?>"><?= e($paymentLabel) ?></span></td>
               <td class="text-end text-nowrap fw-semibold"><?= money($d['tongtien']) ?></td>
               <td><span class="badge text-bg-<?= e($cl) ?>"><?= e($lb) ?></span></td>
               <td><a class="btn btn-sm btn-outline-primary" href="index.php?action=chitietdon&id=<?= (int)$d['id'] ?>">Chi tiết</a></td>
             </tr>
           <?php endforeach; ?>
-          <?php if (!$ds): ?><tr><td colspan="8" class="report-empty">Không có đơn phù hợp với bộ lọc.</td></tr><?php endif; ?>
+          <?php if (!$ds): ?><tr><td colspan="9" class="report-empty">Không có đơn phù hợp với bộ lọc.</td></tr><?php endif; ?>
         </tbody>
       </table>
     </div>

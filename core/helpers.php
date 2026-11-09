@@ -53,6 +53,17 @@ function trangthai_don($t) {
           3 => ['Hoàn thành', 'success'], 4 => ['Đã hủy', 'secondary']];
     return $m[(int)$t] ?? ['Không rõ', 'dark'];
 }
+function trangthai_thanh_toan($status) {
+    $labels = [
+        'unpaid' => ['Chưa thanh toán', 'warning'],
+        'pending' => ['Đang chờ VNPay', 'info'],
+        'paid' => ['Đã thanh toán', 'success'],
+        'failed' => ['Thanh toán thất bại', 'danger'],
+        'expired' => ['Hết hạn thanh toán', 'secondary'],
+        'manual_review' => ['Cần đối soát', 'danger'],
+    ];
+    return $labels[(string)$status] ?? ['Không rõ', 'dark'];
+}
 function hinhthuc_don($h) { return [1 => 'Dùng tại quán', 2 => 'Mang đi', 3 => 'Giao hàng'][(int)$h] ?? '—'; }
 
 // ----- Upload ảnh -----

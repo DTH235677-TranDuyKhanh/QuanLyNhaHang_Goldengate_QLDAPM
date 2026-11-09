@@ -54,7 +54,19 @@ switch ($action) {
         MonAn::tangLuotXem($m['id']);
         if ($user) GoiY::ghiNhanXem($user['id'], $m['id']); else viewed_cookie_add($m['id']);
         $cungNhom = array_values(array_filter(MonAn::layTheoChiNhanh($cnId, $m['nhom_id']), fn($x) => (int)$x['id'] !== (int)$m['id']));
-        view('detail', ['title' => $m['tenmon'], 'm' => $m, 'cungNhom' => array_slice($cungNhom, 0, 4)]);
+        view('detail', [
+            'title' => $m['tenmon'],
+            'm' => $m,
+            'cungNhom' => array_slice($cungNhom, 0, 4),
+            'reviews' => DanhGia::theoMon($m['id']),
+            'reviewSummary' => DanhGia::tongQuanMon($m['id']),
+        ]);
+
+    case 'sukien':
+        view('events', [
+            'title' => 'Sự kiện và ưu đãi',
+            'events' => SuKien::dangDienRa($cnId),
+        ]);
 
     // ===== GIỎ HÀNG =====
     case 'chovaogio':
@@ -102,7 +114,7 @@ switch ($action) {
         $old = $_SESSION['old_checkout'] ?? [];
         unset($_SESSION['old_checkout']);
         $f = $old + [
-            'hoten' => $user['hoten'] ?? '', 'sdt' => $user['sodienthoai'] ?? '',
+            'hoten' => $user['hoten'] ?? '', 'sdt' => $user['sodienthoai'] ?? '', 'phuongthuc_tt' => 'cod',
             'diachi' => $user ? NguoiDung::diaChiMacDinh($user['id']) : '', 'hinhthuc' => 2, 'ghichu' => '', 'voucher' => '',
         ];
         $tam = GioHang::tamTinh($dong);
@@ -121,7 +133,7 @@ switch ($action) {
         $f = [
             'hoten' => post('hoten'), 'sdt' => post('sdt'), 'diachi' => post('diachi'),
             'hinhthuc' => (int)post('hinhthuc', '2'), 'ghichu' => post('ghichu'),
-            'voucher' => strtoupper(post('voucher')),
+            'voucher' => strtoupper(post('voucher')), 'phuongthuc_tt' => post('phuongthuc_tt', 'cod'),
         ];
         if (isset($_POST['kiemtra_voucher'])) {
             $_SESSION['old_checkout'] = $f;
@@ -137,8 +149,18 @@ switch ($action) {
         if ($f['hoten'] === '') $err = 'Vui lòng nhập họ tên.';
         elseif (!preg_match('/^0\d{9}$/', $f['sdt'])) $err = 'Số điện thoại phải gồm 10 chữ số, bắt đầu bằng 0.';
         elseif (!in_array($f['hinhthuc'], [1, 2, 3], true)) $err = 'Hình thức nhận món không hợp lệ.';
+        elseif (!in_array($f['phuongthuc_tt'], ['cod', 'vnpay'], true)) $err = 'Phương thức thanh toán không hợp lệ.';
         elseif ($f['hinhthuc'] === 3 && $f['diachi'] === '') $err = 'Vui lòng nhập địa chỉ giao hàng.';
         if ($err) { flash('danger', $err); $_SESSION['old_checkout'] = $f; redirect('index.php?action=thanhtoan'); }
+
+        if ($f['phuongthuc_tt'] === 'vnpay') {
+            try { VnPay::yeuCauCauHinh(); }
+            catch (RuntimeException $ex) {
+                flash('danger', $ex->getMessage());
+                $_SESSION['old_checkout'] = $f;
+                redirect('index.php?action=thanhtoan');
+            }
+        }
 
         if ($user) {
             $uid = (int)$user['id'];
@@ -151,15 +173,28 @@ switch ($action) {
             }
             $uid = $ex ? (int)$ex['id'] : NguoiDung::taoKhachVangLai($f['hoten'], $f['sdt']);
         }
+        $did = null;
         try {
             $items = [];
             foreach ($dong as $d) $items[(int)$d['id']] = (int)$d['soluong'];
             $diachi = $f['hinhthuc'] === 3 ? $f['diachi'] : null;
             $did = DonHang::tao(
-                $uid, $cnId, $f['hinhthuc'], $f['hoten'], $f['sdt'], $diachi, $f['ghichu'], $items, $f['voucher']
+                $uid, $cnId, $f['hinhthuc'], $f['hoten'], $f['sdt'], $diachi,
+                $f['ghichu'], $items, $f['voucher'], $f['phuongthuc_tt']
             );
+            if ($f['phuongthuc_tt'] === 'vnpay') {
+                $payment = VnPay::taoUrlThanhToan(DonHang::laySo($did), $_SERVER['REMOTE_ADDR'] ?? '');
+                DonHang::batDauThanhToanVnPay($did, $uid, $payment['reference'], $payment['expires_at']);
+                GioHang::xoaTatCa();
+                $_SESSION['don_vua_dat'] = $did;
+                redirect($payment['url']);
+            }
             if ($diachi) NguoiDung::luuDiaChi($uid, $diachi);
         } catch (RuntimeException $ex) {
+            if ($did) {
+                try { DonHang::capNhatTrangThai($did, 4, null, $uid, 0); }
+                catch (RuntimeException $cancelError) { error_log('Unable to release failed checkout order ' . (int)$did . ': ' . $cancelError->getMessage()); }
+            }
             flash('danger', $ex->getMessage());
             $_SESSION['old_checkout'] = $f;
             redirect('index.php?action=thanhtoan');
@@ -174,6 +209,20 @@ switch ($action) {
         $owner = $d && $user && (int)$d['nguoidung_id'] === (int)$user['id'];
         if (!$d || !($owner || ($_SESSION['don_vua_dat'] ?? 0) === $did)) { flash('danger', 'Không tìm thấy đơn hàng.'); redirect('index.php'); }
         view('success', ['title' => 'Đặt món thành công', 'd' => $d, 'ct' => DonHang::chiTiet($did)]);
+
+    case 'vnpayreturn':
+        if (!VnPay::xacThucChuKy($_GET) || !VnPay::thongBaoThuongNhanHopLe($_GET)) {
+            flash('danger', 'Không xác thực được thông tin trả về từ VNPay.');
+            redirect('index.php?action=donhang');
+        }
+        $d = DonHang::theoMaGiaoDichVnPay((string)($_GET['vnp_TxnRef'] ?? ''));
+        $owner = $d && $user && (int)$d['nguoidung_id'] === (int)$user['id'];
+        $recentGuestOrder = $d && (int)($_SESSION['don_vua_dat'] ?? 0) === (int)$d['id'];
+        if (!$d || !($owner || $recentGuestOrder)) {
+            flash('danger', 'Không tìm thấy đơn hàng tương ứng với giao dịch.');
+            redirect('index.php');
+        }
+        view('payment_result', ['title' => 'Kết quả thanh toán', 'd' => $d]);
 
     // ===== TÀI KHOẢN =====
     case 'dangnhap':
@@ -233,16 +282,93 @@ switch ($action) {
         flash('info', 'Bạn đã đăng xuất.');
         redirect('index.php');
 
+    case 'hoso':
+        need_login();
+        view('account', [
+            'title' => 'Tài khoản của tôi',
+            'addresses' => NguoiDung::danhSachDiaChi($user['id']),
+        ]);
+
+    case 'luuhoso':
+        need_login();
+        try {
+            NguoiDung::capNhatHoSo($user['id'], post('hoten'), post('sdt'), post('email'));
+            login_user(NguoiDung::laySo($user['id']));
+            flash('success', 'Đã cập nhật thông tin tài khoản.');
+        } catch (RuntimeException $ex) {
+            flash('danger', $ex->getMessage());
+        }
+        redirect('index.php?action=hoso');
+
+    case 'themdiachi':
+        need_login();
+        try {
+            NguoiDung::themDiaChi($user['id'], post('diachi'));
+            flash('success', 'Đã thêm địa chỉ giao hàng.');
+        } catch (RuntimeException $ex) {
+            flash('danger', $ex->getMessage());
+        }
+        redirect('index.php?action=hoso');
+
+    case 'datdiachimacdinh':
+        need_login();
+        try {
+            NguoiDung::datDiaChiMacDinh($user['id'], (int)post('id'));
+            flash('success', 'Đã cập nhật địa chỉ mặc định.');
+        } catch (RuntimeException $ex) {
+            flash('danger', $ex->getMessage());
+        }
+        redirect('index.php?action=hoso');
+
+    case 'xoadiachi':
+        need_login();
+        try {
+            NguoiDung::xoaDiaChi($user['id'], (int)post('id'));
+            flash('success', 'Đã xóa địa chỉ giao hàng.');
+        } catch (RuntimeException $ex) {
+            flash('danger', $ex->getMessage());
+        }
+        redirect('index.php?action=hoso');
+
     // ===== ĐƠN HÀNG CỦA TÔI =====
     case 'donhang':
         need_login();
         view('orders', ['title' => 'Đơn hàng của tôi', 'dons' => DonHang::cuaNguoiDung($user['id'])]);
 
     case 'chitietdon':
-        need_login();
         $d = DonHang::laySo((int)($_GET['id'] ?? 0));
-        if (!$d || (int)$d['nguoidung_id'] !== (int)$user['id']) { flash('danger', 'Không tìm thấy đơn hàng.'); redirect('index.php?action=donhang'); }
-        view('orderdetail', ['title' => 'Đơn ' . maDon($d['id']), 'd' => $d, 'ct' => DonHang::chiTiet($d['id'])]);
+        $guestOrder = $d && !$user && (int)($_SESSION['don_vua_dat'] ?? 0) === (int)$d['id'];
+        if (!$user && !$guestOrder) need_login();
+        if (!$d || (!$guestOrder && (int)$d['nguoidung_id'] !== (int)$user['id'])) { flash('danger', 'Không tìm thấy đơn hàng.'); redirect('index.php?action=donhang'); }
+        $reviewsByFood = [];
+        if ($user) {
+            foreach (DanhGia::cuaDon($d['id'], $user['id']) as $review) {
+                $reviewsByFood[(int)$review['monan_id']] = $review;
+            }
+        }
+        view('orderdetail', [
+            'title' => 'Đơn ' . maDon($d['id']),
+            'd' => $d,
+            'ct' => DonHang::chiTiet($d['id']),
+            'reviewsByFood' => $reviewsByFood,
+            'history' => DonHang::lichSu($d['id']),
+        ]);
+
+    case 'danhgia':
+        need_login();
+        try {
+            DanhGia::tao(
+                $user['id'],
+                (int)post('donhang_id'),
+                (int)post('monan_id'),
+                (int)post('so_sao'),
+                post('noi_dung')
+            );
+            flash('success', 'Cảm ơn bạn đã gửi đánh giá.');
+        } catch (RuntimeException $ex) {
+            flash('danger', $ex->getMessage());
+        }
+        redirect('index.php?action=chitietdon&id=' . (int)post('donhang_id'));
 
     case 'datlai':
         need_login();
