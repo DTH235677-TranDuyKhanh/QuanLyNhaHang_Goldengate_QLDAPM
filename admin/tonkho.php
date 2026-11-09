@@ -77,4 +77,27 @@
     });
   });
 </script>
+<div class="card mt-3">
+  <div class="card-body">
+    <h5 class="mb-3">Lịch sử biến động tồn kho</h5>
+    <div class="table-responsive">
+      <table class="table table-sm align-middle">
+        <thead><tr><th>Thời gian</th><th>Món</th><th>Loại</th><th class="text-end">Biến động</th><th>Tham chiếu / ghi chú</th><th>Người cập nhật</th></tr></thead>
+        <tbody>
+        <?php foreach ($history as $entry): ?>
+          <tr>
+            <td class="text-nowrap"><?= date('d/m/Y H:i', strtotime($entry['ngaytao'])) ?></td>
+            <td><?= e($entry['tenmon']) ?></td>
+            <td><?= e(['nhap_hang' => 'Nhập hàng', 'dieu_chinh' => 'Điều chỉnh', 'ban_hang' => 'Bán hàng', 'hoan_hang' => 'Hoàn kho'][$entry['loai']] ?? $entry['loai']) ?></td>
+            <td class="text-end <?= (int)$entry['bien_dong'] < 0 ? 'text-danger' : 'text-success' ?>"><?= (int)$entry['bien_dong'] > 0 ? '+' : '' ?><?= (int)$entry['bien_dong'] ?></td>
+            <td><?= e(trim(($entry['tham_chieu'] ?? '') . ' ' . ($entry['ghi_chu'] ?? ''))) ?></td>
+            <td><?= e($entry['hoten'] ?? 'Hệ thống') ?></td>
+          </tr>
+        <?php endforeach; ?>
+        <?php if (!$history): ?><tr><td colspan="6" class="text-muted text-center py-3">Chưa có biến động tồn kho được ghi nhận.</td></tr><?php endif; ?>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
 <?php include 'inc/bottom.php'; ?>

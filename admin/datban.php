@@ -50,7 +50,15 @@
             <td><?= e($booking['tenchinhanh']) ?></td>
             <td><?= (int)$booking['so_khach'] ?></td>
             <td><?= e($booking['ghichu'] ?: '—') ?></td>
-            <td><span class="badge text-bg-<?= e($color) ?>"><?= e($label) ?></span></td>
+            <td>
+              <span class="badge text-bg-<?= e($color) ?>"><?= e($label) ?></span>
+              <?php if (!empty($booking['lichsu_moi'])): ?>
+                <div class="small text-muted mt-1"><?= e($booking['lichsu_moi']) ?>
+                  <?php if (!empty($booking['lichsu_nguoi'])): ?> · <?= e($booking['lichsu_nguoi']) ?><?php endif; ?>
+                  <?php if (!empty($booking['lichsu_ngaytao'])): ?> · <?= date('d/m/Y H:i', strtotime($booking['lichsu_ngaytao'])) ?><?php endif; ?>
+                </div>
+              <?php endif; ?>
+            </td>
             <td>
               <?php if ($nextStates): ?>
                 <form method="post" action="index.php" class="d-flex gap-2">

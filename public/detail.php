@@ -1,4 +1,4 @@
-<?php include 'inc/top.php'; $img = img_url($m['hinhanh']); $ton = (int)$m['soluongton']; ?>
+<?php include 'inc/top.php'; $img = monan_img_url($m); $ton = (int)$m['soluongton']; ?>
 <div class="row g-4">
   <div class="col-md-5">
     <?php if ($img): ?><img src="<?= e($img) ?>" class="img-fluid rounded-4 shadow-sm" alt="<?= e($m['tenmon']) ?>">
@@ -10,6 +10,11 @@
     <div class="fs-3 price mb-2"><?= money($m['giaban']) ?></div>
     <p><?= nl2br(e($m['mota'])) ?></p>
     <p class="text-muted small">👁 <?= (int)$m['luotxem'] ?> lượt xem · 🍴 <?= (int)$m['luotgoi'] ?> phần đã gọi</p>
+    <p class="mb-3">
+      <?php $ratingAverage = (float)$reviewSummary['diem_tb']; ?>
+      <span class="text-warning"><?= str_repeat('★', (int)round($ratingAverage)) . str_repeat('☆', 5 - (int)round($ratingAverage)) ?></span>
+      <span class="text-muted small"><?= number_format($ratingAverage, 1) ?>/5 (<?= (int)$reviewSummary['so_luot'] ?> đánh giá)</span>
+    </p>
     <?php if (!$m['conphucvu']): ?>
       <div class="alert alert-warning">Chi nhánh <?= e($cb['tenchinhanh']) ?> hiện không phục vụ món này. Hãy chọn chi nhánh khác.</div>
     <?php elseif ($ton <= 0): ?>
@@ -27,6 +32,31 @@
     <?php endif; ?>
   </div>
 </div>
+<section class="mt-5">
+  <h4 class="section-title mb-3">Phản hồi và đánh giá</h4>
+  <?php if (!$reviews): ?><p class="text-muted">Món ăn chưa có đánh giá.</p>
+  <?php else: ?>
+    <div class="row g-3">
+      <?php foreach ($reviews as $review): ?>
+        <div class="col-12"><article class="card border-0 shadow-sm"><div class="card-body">
+          <div class="d-flex justify-content-between gap-3">
+            <strong><?= e($review['hoten']) ?></strong>
+            <span class="text-warning text-nowrap"><?= str_repeat('★', (int)$review['so_sao']) . str_repeat('☆', 5 - (int)$review['so_sao']) ?></span>
+          </div>
+          <p class="mb-1 mt-2"><?= nl2br(e($review['noi_dung'])) ?></p>
+          <small class="text-muted"><?= date('d/m/Y H:i', strtotime($review['ngaytao'])) ?></small>
+          <?php if (!empty($review['phan_hoi'])): ?>
+            <div class="mt-3 p-3 bg-light rounded-3">
+              <strong class="small">Phản hồi từ nhà hàng</strong>
+              <p class="mb-1 mt-1"><?= nl2br(e($review['phan_hoi'])) ?></p>
+              <small class="text-muted"><?= date('d/m/Y H:i', strtotime($review['phan_hoi_luc'])) ?></small>
+            </div>
+          <?php endif; ?>
+        </div></article></div>
+      <?php endforeach; ?>
+    </div>
+  <?php endif; ?>
+</section>
 <?php if ($cungNhom): ?>
   <h5 class="section-title mt-5 mb-3">Món cùng nhóm</h5>
   <div class="row g-3"><?php foreach ($cungNhom as $x) echo card_mon($x, $here); ?></div>

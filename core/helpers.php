@@ -53,6 +53,17 @@ function trangthai_don($t) {
           3 => ['Hoàn thành', 'success'], 4 => ['Đã hủy', 'secondary']];
     return $m[(int)$t] ?? ['Không rõ', 'dark'];
 }
+function trangthai_thanh_toan($status) {
+    $labels = [
+        'unpaid' => ['Chưa thanh toán', 'warning'],
+        'pending' => ['Đang chờ VNPay', 'info'],
+        'paid' => ['Đã thanh toán', 'success'],
+        'failed' => ['Thanh toán thất bại', 'danger'],
+        'expired' => ['Hết hạn thanh toán', 'secondary'],
+        'manual_review' => ['Cần đối soát', 'danger'],
+    ];
+    return $labels[(string)$status] ?? ['Không rõ', 'dark'];
+}
 function hinhthuc_don($h) { return [1 => 'Dùng tại quán', 2 => 'Mang đi', 3 => 'Giao hàng'][(int)$h] ?? '—'; }
 
 // ----- Upload ảnh -----
@@ -74,6 +85,31 @@ function upload_image_to_dir($field, $dirName) {
 function upload_image($field) { return upload_image_to_dir($field, 'monan'); }
 function img_url($name) { return $name ? '../uploads/monan/' . rawurlencode($name) : null; }
 function img_url_dir($name, $dirName) { return $name ? '../uploads/' . $dirName . '/' . rawurlencode($name) : null; }
+function monan_img_url($mon) {
+    $uploadedImage = img_url($mon['hinhanh'] ?? null);
+    if ($uploadedImage) return $uploadedImage;
+
+    $images = [
+        'Gỏi cuốn tôm thịt' => 'goicuon.jpg',
+        'Chả giò hải sản' => 'chagio.jpg',
+        'Súp cua trứng bạc' => 'suptrungcua.jpg',
+        'Cơm chiên dương châu' => 'comchienduongchau.jpg',
+        'Bò lúc lắc' => 'boluclac.jpg',
+        'Cá hồi sốt chanh dây' => 'cahoichanhday.jpg',
+        'Gà nướng mật ong' => 'ganuongmatong.jpg',
+        'Lẩu Thái hải sản' => 'lauthai.jpg',
+        'Sườn nướng BBQ' => 'suonnuongbbq.jpg',
+        'Bò nướng lá lốt' => 'bonuonglalot.jpg',
+        'Chè hạt sen long nhãn' => 'chehatsenlongnhan.jpg',
+        'Bánh flan caramel' => 'banhflan.jpg',
+        'Kem dừa' => 'kemdua.jpg',
+        'Trà đào cam sả' => 'tradaocamsa.jpg',
+        'Nước ép cam' => 'nuoccam.jpg',
+        'Cà phê sữa đá' => 'caphesua.jpg',
+    ];
+    $image = $images[$mon['tenmon'] ?? ''] ?? null;
+    return $image ? '../hinhanhmonan/' . rawurlencode($image) : null;
+}
 
 // ----- Cookie món đã xem (khách chưa đăng nhập) -----
 function viewed_cookie() {
