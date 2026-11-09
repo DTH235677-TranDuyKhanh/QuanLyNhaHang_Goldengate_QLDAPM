@@ -76,7 +76,7 @@ body.admin-body {
 .admin-brand {
   display: flex;
   align-items: center;
-  gap: .65rem;
+  gap: .25rem;
   margin: 0 0 1.5rem;
   color: #f5cb67;
   font-size: 1.03rem;
