@@ -1,4 +1,4 @@
-<?php include 'inc/top.php'; $img = img_url($m['hinhanh']); $ton = (int)$m['soluongton']; ?>
+<?php include 'inc/top.php'; $img = monan_img_url($m); $ton = (int)$m['soluongton']; ?>
 <div class="row g-4">
   <div class="col-md-5">
     <?php if ($img): ?><img src="<?= e($img) ?>" class="img-fluid rounded-4 shadow-sm" alt="<?= e($m['tenmon']) ?>">

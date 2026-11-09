@@ -1,7 +1,7 @@
 <?php
 // Thẻ món ăn dùng chung. $m: dòng món (có soluongton), $here: URL hiện tại để quay lại, $lyDo: lý do gợi ý (tùy chọn)
 function card_mon($m, $here, $lyDo = null) {
-    $img = img_url($m['hinhanh']);
+    $img = monan_img_url($m);
     $ton = (int)($m['soluongton'] ?? 0);
     ob_start(); ?>
     <div class="col-6 col-md-4 col-lg-3">
