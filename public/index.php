@@ -6,6 +6,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') csrf_verify();
 
 // ---------- Dữ liệu dùng chung ----------
 $user      = current_user();
+if ($user) {
+    $guestViews = viewed_cookie();
+    if ($guestViews) {
+        GoiY::nhapLuotXemCookie($user['id'], $guestViews);
+        viewed_cookie_clear();
+    }
+}
 $chinhanhs = ChiNhanh::dangHoatDong();
 $nhomon    = NhomMon::tatCa();
 $ids = array_column($chinhanhs, 'id');
@@ -149,18 +156,9 @@ switch ($action) {
         if ($f['hoten'] === '') $err = 'Vui lòng nhập họ tên.';
         elseif (!preg_match('/^0\d{9}$/', $f['sdt'])) $err = 'Số điện thoại phải gồm 10 chữ số, bắt đầu bằng 0.';
         elseif (!in_array($f['hinhthuc'], [1, 2, 3], true)) $err = 'Hình thức nhận món không hợp lệ.';
-        elseif (!in_array($f['phuongthuc_tt'], ['cod', 'vnpay'], true)) $err = 'Phương thức thanh toán không hợp lệ.';
+        elseif (!in_array($f['phuongthuc_tt'], ['cod', 'bank_transfer'], true)) $err = 'Phương thức thanh toán không hợp lệ.';
         elseif ($f['hinhthuc'] === 3 && $f['diachi'] === '') $err = 'Vui lòng nhập địa chỉ giao hàng.';
         if ($err) { flash('danger', $err); $_SESSION['old_checkout'] = $f; redirect('index.php?action=thanhtoan'); }
-
-        if ($f['phuongthuc_tt'] === 'vnpay') {
-            try { VnPay::yeuCauCauHinh(); }
-            catch (RuntimeException $ex) {
-                flash('danger', $ex->getMessage());
-                $_SESSION['old_checkout'] = $f;
-                redirect('index.php?action=thanhtoan');
-            }
-        }
 
         if ($user) {
             $uid = (int)$user['id'];
@@ -182,14 +180,13 @@ switch ($action) {
                 $uid, $cnId, $f['hinhthuc'], $f['hoten'], $f['sdt'], $diachi,
                 $f['ghichu'], $items, $f['voucher'], $f['phuongthuc_tt']
             );
-            if ($f['phuongthuc_tt'] === 'vnpay') {
-                $payment = VnPay::taoUrlThanhToan(DonHang::laySo($did), $_SERVER['REMOTE_ADDR'] ?? '');
-                DonHang::batDauThanhToanVnPay($did, $uid, $payment['reference'], $payment['expires_at']);
+            if ($diachi) NguoiDung::luuDiaChi($uid, $diachi);
+            if ($f['phuongthuc_tt'] === 'bank_transfer') {
+                DonHang::batDauChuyenKhoan($did, $uid);
                 GioHang::xoaTatCa();
                 $_SESSION['don_vua_dat'] = $did;
-                redirect($payment['url']);
+                redirect('index.php?action=chuyenkhoan&id=' . $did);
             }
-            if ($diachi) NguoiDung::luuDiaChi($uid, $diachi);
         } catch (RuntimeException $ex) {
             if ($did) {
                 try { DonHang::capNhatTrangThai($did, 4, null, $uid, 0); }
@@ -210,19 +207,21 @@ switch ($action) {
         if (!$d || !($owner || ($_SESSION['don_vua_dat'] ?? 0) === $did)) { flash('danger', 'Không tìm thấy đơn hàng.'); redirect('index.php'); }
         view('success', ['title' => 'Đặt món thành công', 'd' => $d, 'ct' => DonHang::chiTiet($did)]);
 
-    case 'vnpayreturn':
-        if (!VnPay::xacThucChuKy($_GET) || !VnPay::thongBaoThuongNhanHopLe($_GET)) {
-            flash('danger', 'Không xác thực được thông tin trả về từ VNPay.');
-            redirect('index.php?action=donhang');
-        }
-        $d = DonHang::theoMaGiaoDichVnPay((string)($_GET['vnp_TxnRef'] ?? ''));
+    case 'chuyenkhoan':
+        $did = (int)($_GET['id'] ?? 0);
+        $d = DonHang::laySo($did);
         $owner = $d && $user && (int)$d['nguoidung_id'] === (int)$user['id'];
         $recentGuestOrder = $d && (int)($_SESSION['don_vua_dat'] ?? 0) === (int)$d['id'];
-        if (!$d || !($owner || $recentGuestOrder)) {
-            flash('danger', 'Không tìm thấy đơn hàng tương ứng với giao dịch.');
+        if (!$d || !($owner || $recentGuestOrder) || $d['phuongthuc_tt'] !== 'bank_transfer') {
+            flash('danger', 'Không tìm thấy đơn chuyển khoản.');
             redirect('index.php');
         }
-        view('payment_result', ['title' => 'Kết quả thanh toán', 'd' => $d]);
+        if ($d['trangthai_tt'] === 'pending' && !empty($d['thanhtoan_het_han'])
+            && strtotime($d['thanhtoan_het_han']) <= time()) {
+            DonHang::hetHanChuyenKhoan($did);
+            $d = DonHang::laySo($did);
+        }
+        view('bank_transfer', ['title' => 'Thanh toán chuyển khoản', 'd' => $d]);
 
     // ===== TÀI KHOẢN =====
     case 'dangnhap':
@@ -340,6 +339,11 @@ switch ($action) {
         $guestOrder = $d && !$user && (int)($_SESSION['don_vua_dat'] ?? 0) === (int)$d['id'];
         if (!$user && !$guestOrder) need_login();
         if (!$d || (!$guestOrder && (int)$d['nguoidung_id'] !== (int)$user['id'])) { flash('danger', 'Không tìm thấy đơn hàng.'); redirect('index.php?action=donhang'); }
+        if ($d['phuongthuc_tt'] === 'bank_transfer' && $d['trangthai_tt'] === 'pending'
+            && !empty($d['thanhtoan_het_han']) && strtotime($d['thanhtoan_het_han']) <= time()) {
+            DonHang::hetHanChuyenKhoan((int)$d['id']);
+            $d = DonHang::laySo((int)$d['id']);
+        }
         $reviewsByFood = [];
         if ($user) {
             foreach (DanhGia::cuaDon($d['id'], $user['id']) as $review) {

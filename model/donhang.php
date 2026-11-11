@@ -3,7 +3,13 @@ class DonHang {
     // Lock inventory and voucher, then create the order and update both atomically.
     public static function tao($uid, $cn, $hinhthuc, $hoten, $sdt, $diachi, $ghichu, array $items, $voucherCode = '', $paymentMethod = 'cod') {
         if (!$items) throw new RuntimeException('Giỏ hàng trống.');
-        if (!in_array($paymentMethod, ['cod', 'vnpay'], true)) throw new RuntimeException('Phương thức thanh toán không hợp lệ.');
+        if (!in_array($paymentMethod, ['cod', 'bank_transfer'], true)) throw new RuntimeException('Phương thức thanh toán không hợp lệ.');
+        if ($paymentMethod === 'bank_transfer') {
+            $paymentColumn = DB::one("SHOW COLUMNS FROM donhang LIKE 'phuongthuc_tt'");
+            if (!$paymentColumn || strpos((string)$paymentColumn['Type'], "'bank_transfer'") === false) {
+                throw new RuntimeException('Cơ sở dữ liệu chưa hỗ trợ chuyển khoản. Hãy cập nhật cột phuongthuc_tt để bao gồm bank_transfer.');
+            }
+        }
         ksort($items);   // khóa theo thứ tự cố định để tránh deadlock
         $pdo = DB::pdo();
         $pdo->beginTransaction();
@@ -30,8 +36,8 @@ class DonHang {
             $voucher = $voucherResult['voucher'];
             $discount = $voucherResult['giamgia'];
             $total = $tam + $phi - $discount;
-            if ($paymentMethod === 'vnpay' && $total < 1) {
-                throw new RuntimeException('Tổng tiền phải lớn hơn 0 để thanh toán qua VNPay.');
+            if ($paymentMethod === 'bank_transfer' && $total < 1) {
+                throw new RuntimeException('Tổng tiền phải lớn hơn 0 để thanh toán chuyển khoản.');
             }
             $did = DB::insert("INSERT INTO donhang
                 (nguoidung_id, chinhanh_id, hinhthuc, hoten_nhan, sodt_nhan, diachi, phigiao, voucher_id, giamgia, tongtien, ghichu, phuongthuc_tt)
@@ -75,8 +81,9 @@ class DonHang {
             if ($gioiHanCn !== null && (int)$d['chinhanh_id'] !== (int)$gioiHanCn) throw new RuntimeException('Bạn không có quyền với đơn này.');
             $cu = (int)$d['trangthai'];
             if (in_array($cu, [3, 4], true)) throw new RuntimeException('Đơn đã kết thúc, không thể thay đổi.');
-            if ($d['phuongthuc_tt'] === 'vnpay' && $d['trangthai_tt'] !== 'paid' && $moi !== 4) {
-                throw new RuntimeException('Chỉ có thể xác nhận đơn VNPay sau khi giao dịch được máy chủ đối soát thành công.');
+            if (in_array($d['phuongthuc_tt'], ['bank_transfer', 'vnpay'], true)
+                && $d['trangthai_tt'] !== 'paid' && $moi !== 4) {
+                throw new RuntimeException('Chỉ xử lý đơn chuyển khoản sau khi nhân viên xác nhận đã nhận tiền.');
             }
             if ($moi === 4 && $d['trangthai_tt'] === 'paid') {
                 throw new RuntimeException('Đơn đã thanh toán. Hãy xử lý hoàn tiền với khách trước khi hủy đơn.');
@@ -92,7 +99,11 @@ class DonHang {
             if ($moi === 4) {
                 self::hoanKhoTrongGiaoDich($d, $actorId, 'Hoàn kho do hủy đơn');
             }
-            DB::exec("UPDATE donhang SET trangthai = ? WHERE id = ?", [$moi, (int)$id]);
+            if ($moi === 4 && $d['phuongthuc_tt'] === 'bank_transfer' && $d['trangthai_tt'] === 'pending') {
+                DB::exec("UPDATE donhang SET trangthai = ?, trangthai_tt = 'expired' WHERE id = ?", [$moi, (int)$id]);
+            } else {
+                DB::exec("UPDATE donhang SET trangthai = ? WHERE id = ?", [$moi, (int)$id]);
+            }
             DB::exec("INSERT INTO donhang_lichsu
                 (donhang_id, trangthai_cu, trangthai_moi, nguoidung_id, ghichu)
                 VALUES (?,?,?,?,?)",
@@ -128,7 +139,13 @@ class DonHang {
                         WHERE l.donhang_id = ? ORDER BY l.id", [(int)$id]);
     }
 
-    public static function batDauThanhToanVnPay($id, $userId, $reference, $expiresAt) {
+    public static function batDauChuyenKhoan($id, $userId) {
+        $bankConfig = cfg('bank_transfer') ?: [];
+        $minutes = max(1, (int)($bankConfig['expire_minutes'] ?? 15));
+        if (empty($bankConfig['bank_code']) || empty($bankConfig['account_number']) || empty($bankConfig['account_name'])) {
+            throw new RuntimeException('Chưa cấu hình tài khoản nhận chuyển khoản.');
+        }
+
         $pdo = DB::pdo();
         $pdo->beginTransaction();
         try {
@@ -136,17 +153,97 @@ class DonHang {
             if (!$order || (int)$order['nguoidung_id'] !== (int)$userId) {
                 throw new RuntimeException('Không tìm thấy đơn hàng để thanh toán.');
             }
-            if ((int)$order['trangthai'] !== 0 || $order['trangthai_tt'] !== 'unpaid' || $order['phuongthuc_tt'] !== 'vnpay') {
+            if ((int)$order['trangthai'] !== 0 || $order['trangthai_tt'] !== 'unpaid'
+                || $order['phuongthuc_tt'] !== 'bank_transfer') {
                 throw new RuntimeException('Đơn hàng không còn ở trạng thái có thể thanh toán.');
             }
-            DB::exec("UPDATE donhang SET phuongthuc_tt = 'vnpay', trangthai_tt = 'pending',
-                      vnpay_txn_ref = ?, thanhtoan_het_han = ? WHERE id = ?",
-                [(string)$reference, $expiresAt, (int)$id]);
+
+            $expiresAt = date('Y-m-d H:i:s', time() + $minutes * 60);
+            DB::exec("UPDATE donhang SET trangthai_tt = 'pending', thanhtoan_het_han = ? WHERE id = ?",
+                [$expiresAt, (int)$id]);
             $pdo->commit();
         } catch (Throwable $e) {
             if ($pdo->inTransaction()) $pdo->rollBack();
             throw $e;
         }
+    }
+
+    public static function ghiNhanChuyenKhoan($id, $actorId, $branchLimit = null) {
+        $check = self::laySo((int)$id);
+        if (!$check) throw new RuntimeException('Không tìm thấy đơn hàng.');
+        if ($branchLimit !== null && (int)$check['chinhanh_id'] !== (int)$branchLimit) {
+            throw new RuntimeException('Bạn không có quyền cập nhật đơn của chi nhánh khác.');
+        }
+        if ($check['phuongthuc_tt'] !== 'bank_transfer') throw new RuntimeException('Đơn này không thanh toán chuyển khoản.');
+        self::hetHanChuyenKhoan((int)$id);
+        $pdo = DB::pdo();
+        $pdo->beginTransaction();
+        try {
+            $order = DB::one("SELECT * FROM donhang WHERE id = ? FOR UPDATE", [(int)$id]);
+            if (!$order) throw new RuntimeException('Không tìm thấy đơn hàng.');
+            if ($branchLimit !== null && (int)$order['chinhanh_id'] !== (int)$branchLimit) {
+                throw new RuntimeException('Bạn không có quyền cập nhật đơn của chi nhánh khác.');
+            }
+            if ($order['phuongthuc_tt'] !== 'bank_transfer') throw new RuntimeException('Đơn này không thanh toán chuyển khoản.');
+            if ((int)$order['trangthai'] !== 0 || $order['trangthai_tt'] !== 'pending') {
+                throw new RuntimeException('Đơn không còn chờ xác nhận chuyển khoản.');
+            }
+            if (!empty($order['thanhtoan_het_han']) && strtotime($order['thanhtoan_het_han']) <= time()) {
+                throw new RuntimeException('Đơn đã hết hạn thanh toán.');
+            }
+
+            DB::exec("UPDATE donhang SET trangthai = 1, trangthai_tt = 'paid', thanhtoan_luc = NOW() WHERE id = ?",
+                [(int)$id]);
+            DB::exec("INSERT INTO donhang_lichsu
+                (donhang_id, trangthai_cu, trangthai_moi, nguoidung_id, ghichu)
+                VALUES (?,0,1,?,'Nhân viên xác nhận đã nhận chuyển khoản')",
+                [(int)$id, (int)$actorId]);
+            $pdo->commit();
+        } catch (Throwable $e) {
+            if ($pdo->inTransaction()) $pdo->rollBack();
+            throw $e;
+        }
+    }
+
+    public static function hetHanChuyenKhoan($id = null) {
+        if ($id !== null) {
+            $ids = DB::all("SELECT id FROM donhang WHERE id = ? AND phuongthuc_tt = 'bank_transfer'
+                            AND trangthai_tt = 'pending' AND thanhtoan_het_han <= NOW()", [(int)$id]);
+        } else {
+            $ids = DB::all("SELECT id FROM donhang WHERE phuongthuc_tt = 'bank_transfer'
+                            AND trangthai_tt = 'pending' AND thanhtoan_het_han <= NOW()
+                            ORDER BY id LIMIT 500");
+        }
+        $expired = 0;
+        foreach ($ids as $row) {
+            $pdo = DB::pdo();
+            $pdo->beginTransaction();
+            try {
+                $order = DB::one("SELECT * FROM donhang WHERE id = ? FOR UPDATE", [(int)$row['id']]);
+                if (!$order || $order['phuongthuc_tt'] !== 'bank_transfer'
+                    || $order['trangthai_tt'] !== 'pending'
+                    || empty($order['thanhtoan_het_han']) || strtotime($order['thanhtoan_het_han']) > time()) {
+                    $pdo->rollBack();
+                    continue;
+                }
+
+                if ((int)$order['trangthai'] === 0) {
+                    self::hoanKhoTrongGiaoDich($order, null, 'Hoàn kho do hết hạn chuyển khoản');
+                    DB::exec("UPDATE donhang SET trangthai = 4, trangthai_tt = 'expired' WHERE id = ?", [(int)$order['id']]);
+                    DB::exec("INSERT INTO donhang_lichsu
+                        (donhang_id, trangthai_cu, trangthai_moi, nguoidung_id, ghichu)
+                        VALUES (?,0,4,NULL,'Đơn hủy do hết thời gian chuyển khoản')", [(int)$order['id']]);
+                } else {
+                    DB::exec("UPDATE donhang SET trangthai_tt = 'expired' WHERE id = ?", [(int)$order['id']]);
+                }
+                $pdo->commit();
+                $expired++;
+            } catch (Throwable $e) {
+                if ($pdo->inTransaction()) $pdo->rollBack();
+                throw $e;
+            }
+        }
+        return $expired;
     }
 
     public static function ghiNhanTienMat($id, $actorId, $branchLimit = null) {
@@ -171,139 +268,6 @@ class DonHang {
             if ($pdo->inTransaction()) $pdo->rollBack();
             throw $e;
         }
-    }
-
-    public static function xuLyThongBaoVnPay(array $params) {
-        $reference = trim((string)($params['vnp_TxnRef'] ?? ''));
-        if ($reference === '' || !isset($params['vnp_Amount'], $params['vnp_ResponseCode'], $params['vnp_TransactionNo'])) return '01';
-
-        $pdo = DB::pdo();
-        $pdo->beginTransaction();
-        try {
-            $order = DB::one("SELECT * FROM donhang WHERE vnpay_txn_ref = ? FOR UPDATE", [$reference]);
-            if (!$order) { $pdo->rollBack(); return '01'; }
-            if ((string)$params['vnp_Amount'] !== (string)((int)$order['tongtien'] * 100)) {
-                $pdo->rollBack();
-                return '04';
-            }
-            $transactionNo = trim((string)$params['vnp_TransactionNo']);
-            $success = (string)$params['vnp_ResponseCode'] === '00'
-                && (string)($params['vnp_TransactionStatus'] ?? '') === '00';
-            if ($success && $transactionNo === '') { $pdo->rollBack(); return '04'; }
-            if ($order['trangthai_tt'] === 'paid' || $order['trangthai_tt'] === 'manual_review') {
-                $pdo->rollBack();
-                return hash_equals((string)$order['vnpay_transaction_no'], $transactionNo) ? '00' : '02';
-            }
-            if ($order['trangthai_tt'] !== 'pending') {
-                if ($success && (int)$order['trangthai'] === 4) {
-                    DB::exec("UPDATE donhang SET trangthai_tt = 'manual_review',
-                              vnpay_transaction_no = ?, vnpay_response_code = ?, thanhtoan_luc = NOW()
-                              WHERE id = ?",
-                        [$transactionNo, (string)$params['vnp_ResponseCode'], (int)$order['id']]);
-                    DB::exec("INSERT INTO donhang_lichsu
-                        (donhang_id, trangthai_cu, trangthai_moi, nguoidung_id, ghichu)
-                        VALUES (?,4,4,NULL,'VNPay báo tiền đã thu cho đơn đã hủy/hết hạn; cần đối soát')",
-                        [(int)$order['id']]);
-                    $pdo->commit();
-                    return '00';
-                }
-                $pdo->rollBack();
-                return in_array($order['trangthai_tt'], ['failed', 'expired'], true) ? '00' : '02';
-            }
-
-            $late = !empty($order['thanhtoan_het_han'])
-                && strtotime($order['thanhtoan_het_han']) < time();
-            if ($success && (int)$order['trangthai'] === 0 && !$late) {
-                DB::exec("UPDATE donhang SET trangthai = 1, trangthai_tt = 'paid',
-                          vnpay_transaction_no = ?, vnpay_response_code = ?, thanhtoan_luc = NOW()
-                          WHERE id = ?",
-                    [$transactionNo, (string)$params['vnp_ResponseCode'], (int)$order['id']]);
-                DB::exec("INSERT INTO donhang_lichsu
-                    (donhang_id, trangthai_cu, trangthai_moi, nguoidung_id, ghichu)
-                    VALUES (?,0,1,NULL,'VNPay xác nhận thanh toán thành công')", [(int)$order['id']]);
-            } elseif ($success) {
-                if ((int)$order['trangthai'] === 0) {
-                    self::hoanKhoTrongGiaoDich($order, null, 'Hoàn kho do thanh toán VNPay đến sau thời hạn');
-                    DB::exec("UPDATE donhang SET trangthai = 4 WHERE id = ?", [(int)$order['id']]);
-                    DB::exec("INSERT INTO donhang_lichsu
-                        (donhang_id, trangthai_cu, trangthai_moi, nguoidung_id, ghichu)
-                        VALUES (?,0,4,NULL,'Đơn hủy do VNPay báo thanh toán sau thời hạn')", [(int)$order['id']]);
-                }
-                DB::exec("UPDATE donhang SET trangthai_tt = 'manual_review',
-                          vnpay_transaction_no = ?, vnpay_response_code = ?, thanhtoan_luc = NOW()
-                          WHERE id = ?",
-                    [$transactionNo, (string)$params['vnp_ResponseCode'], (int)$order['id']]);
-                DB::exec("INSERT INTO donhang_lichsu
-                    (donhang_id, trangthai_cu, trangthai_moi, nguoidung_id, ghichu)
-                    VALUES (?,?,?,?,?)",
-                    [(int)$order['id'], (int)$order['trangthai'], (int)$order['trangthai'], null,
-                     'VNPay báo đã thu tiền nhưng đơn đã quá hạn hoặc không còn chờ xử lý; cần đối soát']);
-            } else {
-                if ((int)$order['trangthai'] === 0) {
-                    self::hoanKhoTrongGiaoDich($order, null, 'Hoàn kho do giao dịch VNPay thất bại');
-                    DB::exec("UPDATE donhang SET trangthai = 4 WHERE id = ?", [(int)$order['id']]);
-                    DB::exec("INSERT INTO donhang_lichsu
-                        (donhang_id, trangthai_cu, trangthai_moi, nguoidung_id, ghichu)
-                        VALUES (?,0,4,NULL,'Đơn hủy do VNPay báo thanh toán thất bại')", [(int)$order['id']]);
-                    $paymentStatus = 'failed';
-                } elseif ((int)$order['trangthai'] === 4) {
-                    $paymentStatus = 'failed';
-                } else {
-                    $paymentStatus = 'manual_review';
-                }
-                DB::exec("UPDATE donhang SET trangthai_tt = ?, vnpay_transaction_no = ?,
-                          vnpay_response_code = ? WHERE id = ?",
-                    [$paymentStatus, $transactionNo, (string)$params['vnp_ResponseCode'], (int)$order['id']]);
-            }
-            $pdo->commit();
-            return '00';
-        } catch (Throwable $e) {
-            if ($pdo->inTransaction()) $pdo->rollBack();
-            throw $e;
-        }
-    }
-
-    public static function hetHanThanhToanVnPay() {
-        $ids = DB::all("SELECT id FROM donhang WHERE phuongthuc_tt = 'vnpay'
-                        AND trangthai_tt = 'pending' AND thanhtoan_het_han <= NOW()
-                        ORDER BY id LIMIT 500");
-        $expired = 0;
-        foreach ($ids as $row) {
-            $pdo = DB::pdo();
-            $pdo->beginTransaction();
-            try {
-                $order = DB::one("SELECT * FROM donhang WHERE id = ? FOR UPDATE", [(int)$row['id']]);
-                if (!$order || $order['trangthai_tt'] !== 'pending'
-                    || empty($order['thanhtoan_het_han']) || strtotime($order['thanhtoan_het_han']) > time()) {
-                    $pdo->rollBack();
-                    continue;
-                }
-
-                if ((int)$order['trangthai'] === 0) {
-                    self::hoanKhoTrongGiaoDich($order, null, 'Hoàn kho do hết hạn thanh toán VNPay');
-                    DB::exec("UPDATE donhang SET trangthai = 4, trangthai_tt = 'expired' WHERE id = ?", [(int)$order['id']]);
-                    DB::exec("INSERT INTO donhang_lichsu
-                        (donhang_id, trangthai_cu, trangthai_moi, nguoidung_id, ghichu)
-                        VALUES (?,0,4,NULL,'Đơn hủy do hết thời gian thanh toán VNPay')", [(int)$order['id']]);
-                } else {
-                    DB::exec("UPDATE donhang SET trangthai_tt = 'expired' WHERE id = ?", [(int)$order['id']]);
-                }
-                $pdo->commit();
-                $expired++;
-            } catch (Throwable $e) {
-                if ($pdo->inTransaction()) $pdo->rollBack();
-                throw $e;
-            }
-        }
-        return $expired;
-    }
-
-    public static function theoMaGiaoDichVnPay($reference) {
-        return DB::one("SELECT d.*, c.tenchinhanh, v.ma AS voucher_ma
-                        FROM donhang d
-                        JOIN chinhanh c ON c.id = d.chinhanh_id
-                        LEFT JOIN voucher v ON v.id = d.voucher_id
-                        WHERE d.vnpay_txn_ref = ?", [(string)$reference]);
     }
 
     private static function hoanKhoTrongGiaoDich(array $order, $actorId, $note) {

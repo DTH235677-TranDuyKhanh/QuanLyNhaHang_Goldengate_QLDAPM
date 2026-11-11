@@ -16,7 +16,7 @@
           <div class="col-sm-6"><div class="small text-muted">Số điện thoại</div><div class="fw-semibold"><?= e($d['sodt_nhan']) ?></div></div>
           <div class="col-sm-6"><div class="small text-muted">Hình thức</div><div><?= e(hinhthuc_don($d['hinhthuc'])) ?></div></div>
           <?php [$paymentLabel, $paymentColor] = trangthai_thanh_toan($d['trangthai_tt']); ?>
-          <div class="col-sm-6"><div class="small text-muted">Thanh toán</div><div><?= e($d['phuongthuc_tt'] === 'vnpay' ? 'VNPay' : 'Tiền mặt khi nhận') ?> · <span class="badge text-bg-<?= e($paymentColor) ?>"><?= e($paymentLabel) ?></span></div></div>
+          <div class="col-sm-6"><div class="small text-muted">Thanh toán</div><div><?= e(phuongthuc_thanh_toan($d['phuongthuc_tt'])) ?> · <span class="badge text-bg-<?= e($paymentColor) ?>"><?= e($paymentLabel) ?></span></div></div>
           <?php if ($d['vnpay_txn_ref']): ?><div class="col-12"><div class="small text-muted">Mã giao dịch</div><div><?= e($d['vnpay_txn_ref']) ?><?= $d['vnpay_transaction_no'] ? ' · ' . e($d['vnpay_transaction_no']) : '' ?></div></div><?php endif; ?>
           <?php if ($d['diachi']): ?><div class="col-12"><div class="small text-muted">Địa chỉ giao hàng</div><div><?= e($d['diachi']) ?></div></div><?php endif; ?>
           <?php if ($d['ghichu']): ?><div class="col-12"><div class="small text-muted">Ghi chú của khách</div><div><?= e($d['ghichu']) ?></div></div><?php endif; ?>
@@ -75,8 +75,15 @@
             <button class="btn btn-outline-success w-100" onclick="return confirm('Xác nhận đã nhận đủ tiền mặt?')">Đã nhận tiền mặt</button>
           </form>
         <?php endif; ?>
+        <?php if ($d['phuongthuc_tt'] === 'bank_transfer' && $d['trangthai_tt'] === 'pending' && (int)$d['trangthai'] === 0): ?>
+          <form method="post" action="index.php" class="mb-3">
+            <?= csrf_field() ?><input type="hidden" name="action" value="ghinhanchuyenkhoan"><input type="hidden" name="id" value="<?= (int)$d['id'] ?>">
+            <button class="btn btn-success w-100" onclick="return confirm('Chỉ xác nhận sau khi đã kiểm tra sao kê và đúng số tiền/nội dung chuyển khoản. Tiếp tục?')">Đã nhận chuyển khoản</button>
+          </form>
+          <div class="form-text mb-3">Đối chiếu sao kê Vietcombank với mã đơn <?= e(maDon($d['id'])) ?> trước khi xác nhận.</div>
+        <?php endif; ?>
         <?php if ($d['trangthai_tt'] === 'manual_review'): ?>
-          <div class="alert alert-warning">Giao dịch VNPay cần đối soát thủ công trước khi phục vụ hoặc hoàn tiền.</div>
+          <div class="alert alert-warning">Thanh toán cũ cần được đối soát thủ công trước khi phục vụ hoặc hoàn tiền.</div>
         <?php endif; ?>
         <?php if (in_array((int)$d['trangthai'], [3, 4], true)): ?>
           <div class="alert alert-light mb-0">Đơn hàng đã kết thúc, không thể cập nhật thêm.</div>
@@ -84,7 +91,7 @@
           <?php $nextStatus = (int)$d['trangthai'] + 1; ?>
           <form method="post" action="index.php" class="d-grid gap-2">
             <?= csrf_field() ?><input type="hidden" name="action" value="capnhatdon"><input type="hidden" name="id" value="<?= (int)$d['id'] ?>">
-            <?php if ($d['phuongthuc_tt'] !== 'vnpay' || $d['trangthai_tt'] === 'paid'): ?>
+            <?php if (!in_array($d['phuongthuc_tt'], ['bank_transfer', 'vnpay'], true) || $d['trangthai_tt'] === 'paid'): ?>
               <?php if ($nextStatus !== 3 || $d['trangthai_tt'] === 'paid'): ?>
                 <button name="trangthai" value="<?= $nextStatus ?>" class="btn btn-primary">Chuyển sang: <?= e(trangthai_don($nextStatus)[0]) ?></button>
               <?php else: ?>
@@ -92,7 +99,7 @@
               <?php endif; ?>
               <div class="form-text">Chỉ chuyển khi đơn đã hoàn thành bước hiện tại.</div>
             <?php else: ?>
-              <div class="alert alert-info mb-0">Chỉ bắt đầu xử lý sau khi VNPay xác nhận thanh toán.</div>
+              <div class="alert alert-info mb-0">Chỉ bắt đầu xử lý sau khi đã xác nhận nhận chuyển khoản.</div>
             <?php endif; ?>
             <hr>
             <button name="trangthai" value="4" class="btn btn-outline-danger" onclick="return confirm('Hủy đơn này và hoàn lại tồn kho?')">Hủy đơn & hoàn tồn kho</button>

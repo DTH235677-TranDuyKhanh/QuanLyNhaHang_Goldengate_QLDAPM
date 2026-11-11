@@ -1,7 +1,7 @@
 -- GoldenGate - CSDL v1.0
+-- Dung cho database moi hoac rong. Khong import de nang cap database dang co.
 SET NAMES utf8mb4;
-DROP DATABASE IF EXISTS `goldengate`;
-CREATE DATABASE `goldengate` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE DATABASE IF NOT EXISTS `goldengate` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE `goldengate`;
 
 CREATE TABLE chinhanh (
@@ -152,7 +152,7 @@ CREATE TABLE donhang (
   giamgia DECIMAL(12,0) NOT NULL DEFAULT 0,
   tongtien DECIMAL(12,0) NOT NULL DEFAULT 0,
   trangthai TINYINT NOT NULL DEFAULT 0,
-  phuongthuc_tt ENUM('cod','vnpay') NOT NULL DEFAULT 'cod',
+  phuongthuc_tt ENUM('cod','bank_transfer','vnpay') NOT NULL DEFAULT 'cod',
   trangthai_tt ENUM('unpaid','pending','paid','failed','expired','manual_review') NOT NULL DEFAULT 'unpaid',
   vnpay_txn_ref VARCHAR(100) DEFAULT NULL,
   vnpay_transaction_no VARCHAR(100) DEFAULT NULL,
@@ -311,3 +311,9 @@ INSERT INTO donhangct (donhang_id,monan_id,tenmon,dongia,soluong,thanhtien) VALU
 INSERT INTO luotxem_nguoidung (nguoidung_id,monan_id,soluong) VALUES (3,8,3),(3,7,2),(3,6,1);
 
 UPDATE monan m SET luotgoi = (SELECT COALESCE(SUM(soluong),0) FROM donhangct WHERE monan_id=m.id) + ((m.id*7) % 23) + 5;
+
+-- Repair records created by older builds that accepted bank_transfer before
+-- the payment ENUM was updated and consequently stored an empty ENUM value.
+UPDATE donhang
+SET phuongthuc_tt = 'bank_transfer', trangthai_tt = 'expired'
+WHERE phuongthuc_tt = '' AND trangthai = 4 AND trangthai_tt = 'unpaid';

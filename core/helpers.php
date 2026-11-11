@@ -56,13 +56,20 @@ function trangthai_don($t) {
 function trangthai_thanh_toan($status) {
     $labels = [
         'unpaid' => ['Chưa thanh toán', 'warning'],
-        'pending' => ['Đang chờ VNPay', 'info'],
+        'pending' => ['Chờ xác nhận thanh toán', 'info'],
         'paid' => ['Đã thanh toán', 'success'],
-        'failed' => ['Thanh toán thất bại', 'danger'],
         'expired' => ['Hết hạn thanh toán', 'secondary'],
-        'manual_review' => ['Cần đối soát', 'danger'],
+        'failed' => ['Thanh toán thất bại', 'danger'],
+        'manual_review' => ['Cần kiểm tra thủ công', 'danger'],
     ];
     return $labels[(string)$status] ?? ['Không rõ', 'dark'];
+}
+function phuongthuc_thanh_toan($method) {
+    return [
+        'cod' => 'Tiền mặt khi nhận món',
+        'bank_transfer' => 'Chuyển khoản ngân hàng',
+        'vnpay' => 'VNPay (ngừng hỗ trợ)',
+    ][(string)$method] ?? 'Không xác định';
 }
 function hinhthuc_don($h) { return [1 => 'Dùng tại quán', 2 => 'Mang đi', 3 => 'Giao hàng'][(int)$h] ?? '—'; }
 
@@ -72,7 +79,6 @@ function upload_image_to_dir($field, $dirName) {
     if (empty($_FILES[$field]) || $_FILES[$field]['error'] === UPLOAD_ERR_NO_FILE) return null;
     $f = $_FILES[$field];
     if ($f['error'] !== UPLOAD_ERR_OK) throw new RuntimeException('Tải ảnh lên thất bại.');
-    if ($f['size'] > 2 * 1024 * 1024) throw new RuntimeException('Ảnh tối đa 2MB.');
     $mime = (new finfo(FILEINFO_MIME_TYPE))->file($f['tmp_name']);
     $ext = ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/webp' => 'webp'][$mime] ?? null;
     if (!$ext) throw new RuntimeException('Chỉ chấp nhận ảnh JPG, PNG hoặc WEBP.');
@@ -122,4 +128,8 @@ function viewed_cookie_add($id) {
     $ids = array_slice(array_values(array_unique($ids)), 0, 20);
     setcookie('gg_viewed', implode(',', $ids), ['expires' => time() + 86400 * 30, 'path' => '/', 'httponly' => true, 'samesite' => 'Lax']);
     $_COOKIE['gg_viewed'] = implode(',', $ids);
+}
+function viewed_cookie_clear() {
+    setcookie('gg_viewed', '', ['expires' => time() - 3600, 'path' => '/', 'httponly' => true, 'samesite' => 'Lax']);
+    unset($_COOKIE['gg_viewed']);
 }

@@ -54,7 +54,7 @@ $endValue = !empty($edit['ket_thuc']) ? date('Y-m-d\TH:i', strtotime($edit['ket_
         </div>
         <div class="mb-3"><label class="form-label" for="eventImage">Ảnh sự kiện <?= $edit ? '' : '*' ?></label>
           <input id="eventImage" class="form-control" type="file" name="hinh_anh" accept="image/jpeg,image/png,image/webp" <?= $edit ? '' : 'required' ?>>
-          <div class="form-text">JPG, PNG hoặc WEBP; tối đa 2 MB. Để trống khi sửa nếu giữ ảnh hiện tại.</div>
+          <div class="form-text">JPG, PNG hoặc WEBP. Để trống khi sửa nếu giữ ảnh hiện tại.</div>
         </div>
         <div class="mb-3"><label class="form-label" for="eventOffer">Voucher liên kết (không bắt buộc)</label>
           <select id="eventOffer" class="form-select" name="voucher_id">
