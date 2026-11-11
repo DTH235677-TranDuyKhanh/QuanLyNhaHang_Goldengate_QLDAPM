@@ -15,7 +15,8 @@ class DanhGia {
     }
 
     public static function cuaDon($orderId, $userId) {
-        return DB::all("SELECT dg.monan_id, dg.so_sao, dg.noi_dung, dg.ngaytao
+        return DB::all("SELECT dg.monan_id, dg.so_sao, dg.noi_dung, dg.ngaytao,
+                               dg.phan_hoi, dg.phan_hoi_luc
                         FROM danhgia dg
                         JOIN donhang dh ON dh.id = dg.donhang_id
                         WHERE dg.donhang_id = ? AND dh.nguoidung_id = ?", [(int)$orderId, (int)$userId]);

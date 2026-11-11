@@ -242,6 +242,11 @@ switch ($action) {
     case 'chitietdon':
         $d = DonHang::laySo((int)($_GET['id'] ?? 0));
         if (!$d || (!$isAdmin && (int)$d['chinhanh_id'] !== $myCn)) { flash('danger', 'Không tìm thấy đơn hàng.'); redirect('index.php?action=donhang'); }
+        if ($d['phuongthuc_tt'] === 'bank_transfer' && $d['trangthai_tt'] === 'pending'
+            && !empty($d['thanhtoan_het_han']) && strtotime($d['thanhtoan_het_han']) <= time()) {
+            DonHang::hetHanChuyenKhoan((int)$d['id']);
+            $d = DonHang::laySo((int)$d['id']);
+        }
         aview('donhang_ct', ['d' => $d, 'ct' => DonHang::chiTiet($d['id']), 'history' => DonHang::lichSu($d['id'])]);
     case 'capnhatdon':
         try { DonHang::capNhatTrangThai((int)post('id'), (int)post('trangthai'), $myCn, (int)$user['id']); flash('success', 'Đã cập nhật trạng thái đơn.'); }
@@ -251,6 +256,14 @@ switch ($action) {
         try {
             DonHang::ghiNhanTienMat((int)post('id'), (int)$user['id'], $isAdmin ? null : $myCn);
             flash('success', 'Đã ghi nhận thu tiền mặt.');
+        } catch (RuntimeException $e) {
+            flash('danger', $e->getMessage());
+        }
+        redirect('index.php?action=chitietdon&id=' . (int)post('id'));
+    case 'ghinhanchuyenkhoan':
+        try {
+            DonHang::ghiNhanChuyenKhoan((int)post('id'), (int)$user['id'], $isAdmin ? null : $myCn);
+            flash('success', 'Đã xác nhận nhận chuyển khoản và chuyển đơn sang chờ xử lý.');
         } catch (RuntimeException $e) {
             flash('danger', $e->getMessage());
         }

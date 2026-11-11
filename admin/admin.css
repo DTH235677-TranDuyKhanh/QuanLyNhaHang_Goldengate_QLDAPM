@@ -12,7 +12,9 @@ body.admin-body {
   min-height: 100vh;
   background: var(--admin-bg);
   color: var(--admin-ink);
-  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", sans-serif;
+  font-size: 1rem;
+  line-height: 1.55;
 }
 
 .admin-login-body {
@@ -23,6 +25,10 @@ body.admin-body {
   background:
     radial-gradient(ellipse at 15% 15%, rgba(245, 203, 103, .14), transparent 35%),
     linear-gradient(145deg, #182332, #26364a);
+  color: var(--admin-ink);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", sans-serif;
+  font-size: 1rem;
+  line-height: 1.55;
 }
 
 .admin-login-card {
@@ -205,6 +211,8 @@ body.admin-body {
 .admin-content h6 {
   color: var(--admin-ink);
   font-weight: 700;
+  letter-spacing: -.02em;
+  line-height: 1.25;
 }
 
 .admin-content > .d-flex h3,
@@ -237,7 +245,7 @@ body.admin-body {
   border-bottom: 1px solid var(--admin-line);
   background: #f8fafc;
   color: #718096;
-  font-size: .72rem;
+  font-size: .75rem;
   font-weight: 700;
   letter-spacing: .045em;
   text-transform: uppercase;
@@ -248,7 +256,7 @@ body.admin-body {
   padding-top: .78rem;
   padding-bottom: .78rem;
   border-color: #edf1f5;
-  font-size: .88rem;
+  font-size: .9rem;
 }
 
 .admin-main .table tbody tr:last-child td {
@@ -383,13 +391,13 @@ body.admin-body {
 .admin-form-card .form-label {
   margin-bottom: .4rem;
   color: #3a4658;
-  font-size: .84rem;
+  font-size: .875rem;
   font-weight: 650;
 }
 
 .admin-form-card .form-text {
   color: var(--admin-muted);
-  font-size: .76rem;
+  font-size: .8rem;
 }
 
 .admin-required {

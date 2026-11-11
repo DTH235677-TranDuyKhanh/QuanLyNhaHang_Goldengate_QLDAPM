@@ -5,5 +5,5 @@ if (PHP_SAPI !== 'cli') {
 }
 
 require __DIR__ . '/../core/bootstrap.php';
-$count = DonHang::hetHanThanhToanVnPay();
-echo 'Expired VNPay orders: ' . $count . PHP_EOL;
+$count = DonHang::hetHanChuyenKhoan();
+echo 'Expired bank transfer orders: ' . $count . PHP_EOL;
