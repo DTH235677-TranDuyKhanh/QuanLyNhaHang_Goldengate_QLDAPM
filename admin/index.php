@@ -14,7 +14,7 @@ function only_admin() {
     global $isAdmin;
     if (!$isAdmin) { flash('danger', 'Chức năng này chỉ dành cho quản trị tổng.'); redirect('index.php'); }
 }
-// ---------- Xử lý đăng nhập ----------
+// ---------- Xử lý đăng nhập -------------------
 // ---------- Đăng nhập quản trị ----------------
 if ($action === 'login' || $action === 'xldangnhap') {
     if ($action === 'xldangnhap') {
