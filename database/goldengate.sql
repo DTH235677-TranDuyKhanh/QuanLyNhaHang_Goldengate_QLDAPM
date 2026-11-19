@@ -1,7 +1,7 @@
 -- GoldenGate - CSDL v1.0
+-- Dung cho database moi hoac rong. Khong import de nang cap database dang co.
 SET NAMES utf8mb4;
-DROP DATABASE IF EXISTS `goldengate`;
-CREATE DATABASE `goldengate` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE DATABASE IF NOT EXISTS `goldengate` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE `goldengate`;
 
 CREATE TABLE chinhanh (
@@ -11,6 +11,8 @@ CREATE TABLE chinhanh (
   sodienthoai VARCHAR(15) DEFAULT NULL,
   giomocua TIME NOT NULL DEFAULT '10:00:00',
   giodongcua TIME NOT NULL DEFAULT '22:00:00',
+  suc_chua INT UNSIGNED NOT NULL DEFAULT 60,
+  thoi_luong_datban_phut SMALLINT UNSIGNED NOT NULL DEFAULT 120,
   trangthai TINYINT NOT NULL DEFAULT 1
 ) ENGINE=InnoDB;
 
@@ -115,6 +117,25 @@ CREATE TABLE voucher (
   FOREIGN KEY (chinhanh_id) REFERENCES chinhanh(id) ON DELETE SET NULL
 ) ENGINE=InnoDB;
 
+CREATE TABLE sukien (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  tieu_de VARCHAR(255) NOT NULL,
+  mo_ta TEXT NOT NULL,
+  hinh_anh VARCHAR(255) NOT NULL,
+  ma_uu_dai VARCHAR(40) DEFAULT NULL,
+  voucher_id INT DEFAULT NULL,
+  bat_dau DATETIME NOT NULL,
+  ket_thuc DATETIME NOT NULL,
+  chinhanh_id INT DEFAULT NULL,
+  trangthai TINYINT NOT NULL DEFAULT 1,
+  ngaytao DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  KEY idx_sukien_public (trangthai, bat_dau, ket_thuc),
+  KEY idx_sukien_branch (chinhanh_id),
+  KEY idx_sukien_voucher (voucher_id),
+  FOREIGN KEY (chinhanh_id) REFERENCES chinhanh(id) ON DELETE SET NULL,
+  FOREIGN KEY (voucher_id) REFERENCES voucher(id) ON DELETE SET NULL
+) ENGINE=InnoDB;
+
 -- hinhthuc: 1 tại quán, 2 mang đi, 3 giao hàng
 -- trangthai: 0 chờ xác nhận, 1 đã xác nhận, 2 đang chuẩn bị, 3 hoàn thành, 4 đã hủy
 CREATE TABLE donhang (
@@ -131,7 +152,15 @@ CREATE TABLE donhang (
   giamgia DECIMAL(12,0) NOT NULL DEFAULT 0,
   tongtien DECIMAL(12,0) NOT NULL DEFAULT 0,
   trangthai TINYINT NOT NULL DEFAULT 0,
+  phuongthuc_tt ENUM('cod','bank_transfer','vnpay') NOT NULL DEFAULT 'cod',
+  trangthai_tt ENUM('unpaid','pending','paid','failed','expired','manual_review') NOT NULL DEFAULT 'unpaid',
+  vnpay_txn_ref VARCHAR(100) DEFAULT NULL,
+  vnpay_transaction_no VARCHAR(100) DEFAULT NULL,
+  vnpay_response_code VARCHAR(10) DEFAULT NULL,
+  thanhtoan_het_han DATETIME DEFAULT NULL,
+  thanhtoan_luc DATETIME DEFAULT NULL,
   ghichu VARCHAR(255) DEFAULT NULL,
+  UNIQUE KEY uq_donhang_vnpay_ref (vnpay_txn_ref),
   KEY idx_nd (nguoidung_id),
   KEY idx_cn_ngay (chinhanh_id, ngay),
   FOREIGN KEY (nguoidung_id) REFERENCES nguoidung(id),
@@ -161,6 +190,71 @@ CREATE TABLE luotxem_nguoidung (
   PRIMARY KEY (nguoidung_id, monan_id),
   FOREIGN KEY (nguoidung_id) REFERENCES nguoidung(id),
   FOREIGN KEY (monan_id) REFERENCES monan(id)
+) ENGINE=InnoDB;
+
+CREATE TABLE danhgia (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  nguoidung_id INT NOT NULL,
+  donhang_id INT NOT NULL,
+  monan_id INT NOT NULL,
+  so_sao TINYINT UNSIGNED NOT NULL,
+  noi_dung VARCHAR(1000) NOT NULL,
+  phan_hoi VARCHAR(1000) DEFAULT NULL,
+  phan_hoi_luc DATETIME DEFAULT NULL,
+  phan_hoi_boi INT DEFAULT NULL,
+  trangthai TINYINT NOT NULL DEFAULT 1,
+  ngaytao DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_danhgia_order_food (donhang_id, monan_id),
+  KEY idx_danhgia_food_status (monan_id, trangthai, ngaytao),
+  KEY idx_danhgia_user (nguoidung_id),
+  FOREIGN KEY (nguoidung_id) REFERENCES nguoidung(id),
+  FOREIGN KEY (donhang_id) REFERENCES donhang(id),
+  FOREIGN KEY (monan_id) REFERENCES monan(id),
+  FOREIGN KEY (phan_hoi_boi) REFERENCES nguoidung(id) ON DELETE SET NULL,
+  CHECK (so_sao BETWEEN 1 AND 5)
+) ENGINE=InnoDB;
+
+CREATE TABLE donhang_lichsu (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  donhang_id INT NOT NULL,
+  trangthai_cu TINYINT DEFAULT NULL,
+  trangthai_moi TINYINT NOT NULL,
+  nguoidung_id INT DEFAULT NULL,
+  ghichu VARCHAR(500) DEFAULT NULL,
+  ngaytao DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  KEY idx_donhang_lichsu_order (donhang_id, ngaytao),
+  FOREIGN KEY (donhang_id) REFERENCES donhang(id) ON DELETE CASCADE,
+  FOREIGN KEY (nguoidung_id) REFERENCES nguoidung(id) ON DELETE SET NULL
+) ENGINE=InnoDB;
+
+CREATE TABLE datban_lichsu (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  datban_id INT NOT NULL,
+  trangthai_cu TINYINT DEFAULT NULL,
+  trangthai_moi TINYINT NOT NULL,
+  nguoidung_id INT DEFAULT NULL,
+  ghichu VARCHAR(500) DEFAULT NULL,
+  ngaytao DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  KEY idx_datban_lichsu_booking (datban_id, ngaytao),
+  FOREIGN KEY (datban_id) REFERENCES datban(id) ON DELETE CASCADE,
+  FOREIGN KEY (nguoidung_id) REFERENCES nguoidung(id) ON DELETE SET NULL
+) ENGINE=InnoDB;
+
+CREATE TABLE tonkho_lichsu (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  chinhanh_id INT NOT NULL,
+  monan_id INT NOT NULL,
+  bien_dong INT NOT NULL,
+  loai ENUM('nhap_hang','dieu_chinh','ban_hang','hoan_hang') NOT NULL,
+  tham_chieu VARCHAR(80) DEFAULT NULL,
+  ghi_chu VARCHAR(255) DEFAULT NULL,
+  nguoidung_id INT DEFAULT NULL,
+  ngaytao DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  KEY idx_tonkho_lichsu_item (chinhanh_id, monan_id, ngaytao),
+  KEY idx_tonkho_lichsu_ref (tham_chieu),
+  FOREIGN KEY (chinhanh_id) REFERENCES chinhanh(id),
+  FOREIGN KEY (monan_id) REFERENCES monan(id),
+  FOREIGN KEY (nguoidung_id) REFERENCES nguoidung(id) ON DELETE SET NULL
 ) ENGINE=InnoDB;
 
 -- ===== DỮ LIỆU MẪU =====
@@ -217,3 +311,9 @@ INSERT INTO donhangct (donhang_id,monan_id,tenmon,dongia,soluong,thanhtien) VALU
 INSERT INTO luotxem_nguoidung (nguoidung_id,monan_id,soluong) VALUES (3,8,3),(3,7,2),(3,6,1);
 
 UPDATE monan m SET luotgoi = (SELECT COALESCE(SUM(soluong),0) FROM donhangct WHERE monan_id=m.id) + ((m.id*7) % 23) + 5;
+
+-- Repair records created by older builds that accepted bank_transfer before
+-- the payment ENUM was updated and consequently stored an empty ENUM value.
+UPDATE donhang
+SET phuongthuc_tt = 'bank_transfer', trangthai_tt = 'expired'
+WHERE phuongthuc_tt = '' AND trangthai = 4 AND trangthai_tt = 'unpaid';

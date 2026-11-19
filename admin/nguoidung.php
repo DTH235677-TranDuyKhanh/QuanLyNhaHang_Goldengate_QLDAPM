@@ -9,10 +9,10 @@
   <div class="col-12 col-xxl-8">
     <div class="card">
       <div class="card-body">
-        <h5 class="mb-3">Tài khoản đã đăng ký <span class="badge text-bg-light"><?= count($ds) ?></span></h5>
+        <h5 class="mb-3"> Tài Khoản Đã Đăng Kí <span class="badge text-bg-light"><?= count($ds) ?></span></h5>
         <div class="table-responsive">
           <table class="table">
-            <thead><tr><th>Nhân sự</th><th>Thông tin liên hệ</th><th>Vai trò</th><th>Chi nhánh</th><th>Trạng thái</th><th></th></tr></thead>
+            <thead><tr><th>Nhân Sự</th><th>Thông Tin Liên Hệ </th><th>Vai Trò</th><th>Chi Nhánh</th><th>Trạng thái</th><th></th></tr></thead>
             <tbody>
               <?php foreach ($ds as $u): ?>
                 <tr>

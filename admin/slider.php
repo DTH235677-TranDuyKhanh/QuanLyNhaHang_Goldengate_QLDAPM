@@ -77,7 +77,7 @@
           </div>
           <label class="form-label" for="sliderImage">Ảnh <?= $edit ? '(không bắt buộc nếu giữ ảnh hiện tại)' : '<span class="admin-required">*</span>' ?></label>
           <input id="sliderImage" type="file" class="form-control" name="hinh_anh" accept="image/jpeg,image/png,image/webp" <?= $edit ? '' : 'required' ?>>
-          <div class="form-text">JPG, PNG hoặc WEBP; tối đa 2 MB.</div>
+          <div class="form-text">JPG, PNG hoặc WEBP.</div>
         </div>
         <div class="admin-form-section">
           <h5 class="admin-form-section-title">Nút điều hướng</h5>

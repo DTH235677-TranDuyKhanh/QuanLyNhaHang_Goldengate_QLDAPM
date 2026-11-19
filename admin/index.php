@@ -14,8 +14,8 @@ function only_admin() {
     global $isAdmin;
     if (!$isAdmin) { flash('danger', 'Chức năng này chỉ dành cho quản trị tổng.'); redirect('index.php'); }
 }
-
-// ---------- Đăng nhập quản trị ----------
+// ---------- Xử lý đăng nhập ---------------------
+// ---------- Đăng nhập quản trị ----------------
 if ($action === 'login' || $action === 'xldangnhap') {
     if ($action === 'xldangnhap') {
         $khoa = $_SESSION['login_lock'] ?? 0;
@@ -68,6 +68,7 @@ switch ($action) {
         if (strlen($ten) > 100 || strlen($dc) > 255) { flash('danger', 'Tên chi nhánh hoặc địa chỉ vượt quá độ dài cho phép.'); redirect('index.php?action=chinhanh'); }
         if ($id && !ChiNhanh::laySo($id)) { flash('danger', 'Chi nhánh không tồn tại.'); redirect('index.php?action=chinhanh'); }
         $mo = post('mo', '10:00'); $dong = post('dong', '22:00');
+<<<<<<< HEAD
         if (!preg_match('/^(?:[01]\d|2[0-3]):[0-5]\d$/', $mo) || !preg_match('/^(?:[01]\d|2[0-3]):[0-5]\d$/', $dong)) {
             flash('danger', 'Giờ mở cửa và đóng cửa không hợp lệ.');
             redirect('index.php?action=chinhanh' . ($id ? '&edit=' . $id : ''));
@@ -78,6 +79,15 @@ switch ($action) {
             redirect('index.php?action=chinhanh' . ($id ? '&edit=' . $id : ''));
         }
         if ($id) ChiNhanh::sua($id, $ten, $dc, $sdt, $mo, $dong); else ChiNhanh::them($ten, $dc, $sdt, $mo, $dong);
+=======
+        try {
+            if ($id) ChiNhanh::sua($id, $ten, $dc, post('sdt'), $mo, $dong, post('suc_chua'), post('thoi_luong'));
+            else ChiNhanh::them($ten, $dc, post('sdt'), $mo, $dong, post('suc_chua'), post('thoi_luong'));
+        } catch (RuntimeException $e) {
+            flash('danger', $e->getMessage());
+            redirect('index.php?action=chinhanh' . ($id ? '&edit=' . $id : ''));
+        }
+>>>>>>> 5d6f6966b65e52b49be136b0b25b03d1e5be16fc
         flash('success', 'Đã lưu chi nhánh.');
         redirect('index.php?action=chinhanh');
     case 'doitrangthaicn':
@@ -177,17 +187,78 @@ switch ($action) {
         flash('success', 'Đã xóa slide.');
         redirect('index.php?action=slider');
 
+    // ===== SỰ KIỆN VÀ ƯU ĐÃI =====
+    case 'sukien':
+        only_admin();
+        aview('sukien', [
+            'ds' => SuKien::tatCaAdmin(),
+            'edit' => !empty($_GET['edit']) ? SuKien::laySo((int)$_GET['edit']) : null,
+            'cns' => ChiNhanh::tatCa(),
+            'vouchers' => Voucher::tatCa(),
+        ]);
+    case 'luusukien':
+        only_admin();
+        $id = (int)post('id');
+        try {
+            $image = upload_image_to_dir('hinh_anh', 'sukien');
+            SuKien::luu($_POST, $image);
+            flash('success', 'Đã lưu sự kiện.');
+        } catch (RuntimeException $e) {
+            flash('danger', $e->getMessage());
+        }
+        redirect('index.php?action=sukien' . ($id ? '&edit=' . $id : ''));
+    case 'doitrangthaisukien':
+        only_admin();
+        if (SuKien::doiTrangThai((int)post('id'))) flash('success', 'Đã đổi trạng thái sự kiện.');
+        else flash('danger', 'Không tìm thấy sự kiện.');
+        redirect('index.php?action=sukien');
+
+    // ===== PHẢN HỒI VÀ ĐÁNH GIÁ =====
+    case 'danhgia':
+        only_admin();
+        aview('danhgia', ['ds' => DanhGia::tatCaAdmin()]);
+    case 'doitrangthaidanhgia':
+        only_admin();
+        if (DanhGia::doiTrangThai((int)post('id'))) flash('success', 'Đã cập nhật trạng thái đánh giá.');
+        else flash('danger', 'Không tìm thấy đánh giá.');
+        redirect('index.php?action=danhgia');
+    case 'phanhoidanhgia':
+        only_admin();
+        try {
+            DanhGia::phanHoi((int)post('id'), post('phan_hoi'), (int)$user['id']);
+            flash('success', 'Đã lưu phản hồi cho khách hàng.');
+        } catch (RuntimeException $e) {
+            flash('danger', $e->getMessage());
+        }
+        redirect('index.php?action=danhgia');
+
     // ===== TỒN KHO THEO CHI NHÁNH =====
     case 'tonkho':
         $cn = $isAdmin ? (int)($_GET['cn'] ?? 0) : $myCn;
         $cns = $isAdmin ? ChiNhanh::tatCa() : [ChiNhanh::laySo($myCn)];
         if (!$cn && $cns) $cn = (int)$cns[0]['id'];
-        aview('tonkho', ['cn' => $cn, 'cns' => $cns, 'ds' => $cn ? MonAn::tonTheoChiNhanh($cn) : []]);
+        aview('tonkho', [
+            'cn' => $cn, 'cns' => $cns, 'ds' => $cn ? MonAn::tonTheoChiNhanh($cn) : [],
+            'history' => $cn ? MonAn::lichSuTon($cn) : [],
+        ]);
     case 'luutonkho':
         $cn = $isAdmin ? (int)post('cn') : $myCn;
         if (!ChiNhanh::laySo($cn)) { flash('danger', 'Chi nhánh không hợp lệ.'); redirect('index.php?action=tonkho'); }
         $ton = $_POST['ton'] ?? []; $pv = $_POST['phucvu'] ?? [];
-        if (is_array($ton)) foreach ($ton as $mid => $sl) MonAn::capNhatTon($cn, (int)$mid, (int)$sl, isset($pv[$mid]));
+        try {
+            if (!is_array($ton) || !is_array($pv)) throw new RuntimeException('Dữ liệu tồn kho không hợp lệ.');
+            $updates = [];
+            foreach ($ton as $mid => $sl) {
+                $foodId = filter_var($mid, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+                $quantity = filter_var($sl, FILTER_VALIDATE_INT, ['options' => ['min_range' => 0, 'max_range' => 2147483647]]);
+                if ($foodId === false || $quantity === false) throw new RuntimeException('Số lượng tồn phải là số nguyên không âm.');
+                $updates[$foodId] = ['soluong' => $quantity, 'phucvu' => isset($pv[$mid])];
+            }
+            MonAn::capNhatTonNhieu($cn, $updates, (int)$user['id']);
+        } catch (RuntimeException $e) {
+            flash('danger', $e->getMessage());
+            redirect('index.php?action=tonkho&cn=' . $cn);
+        }
         flash('success', 'Đã cập nhật tồn kho.');
         redirect('index.php?action=tonkho&cn=' . $cn);
 
@@ -199,10 +270,31 @@ switch ($action) {
     case 'chitietdon':
         $d = DonHang::laySo((int)($_GET['id'] ?? 0));
         if (!$d || (!$isAdmin && (int)$d['chinhanh_id'] !== $myCn)) { flash('danger', 'Không tìm thấy đơn hàng.'); redirect('index.php?action=donhang'); }
-        aview('donhang_ct', ['d' => $d, 'ct' => DonHang::chiTiet($d['id'])]);
+        if ($d['phuongthuc_tt'] === 'bank_transfer' && $d['trangthai_tt'] === 'pending'
+            && !empty($d['thanhtoan_het_han']) && strtotime($d['thanhtoan_het_han']) <= time()) {
+            DonHang::hetHanChuyenKhoan((int)$d['id']);
+            $d = DonHang::laySo((int)$d['id']);
+        }
+        aview('donhang_ct', ['d' => $d, 'ct' => DonHang::chiTiet($d['id']), 'history' => DonHang::lichSu($d['id'])]);
     case 'capnhatdon':
-        try { DonHang::capNhatTrangThai((int)post('id'), (int)post('trangthai'), $myCn); flash('success', 'Đã cập nhật trạng thái đơn.'); }
+        try { DonHang::capNhatTrangThai((int)post('id'), (int)post('trangthai'), $myCn, (int)$user['id']); flash('success', 'Đã cập nhật trạng thái đơn.'); }
         catch (RuntimeException $e) { flash('danger', $e->getMessage()); }
+        redirect('index.php?action=chitietdon&id=' . (int)post('id'));
+    case 'ghinhantienmat':
+        try {
+            DonHang::ghiNhanTienMat((int)post('id'), (int)$user['id'], $isAdmin ? null : $myCn);
+            flash('success', 'Đã ghi nhận thu tiền mặt.');
+        } catch (RuntimeException $e) {
+            flash('danger', $e->getMessage());
+        }
+        redirect('index.php?action=chitietdon&id=' . (int)post('id'));
+    case 'ghinhanchuyenkhoan':
+        try {
+            DonHang::ghiNhanChuyenKhoan((int)post('id'), (int)$user['id'], $isAdmin ? null : $myCn);
+            flash('success', 'Đã xác nhận nhận chuyển khoản và chuyển đơn sang chờ xử lý.');
+        } catch (RuntimeException $e) {
+            flash('danger', $e->getMessage());
+        }
         redirect('index.php?action=chitietdon&id=' . (int)post('id'));
 
     // ===== ĐẶT BÀN =====
@@ -215,7 +307,7 @@ switch ($action) {
         ]);
     case 'capnhatdatban':
         try {
-            DatBan::capNhatTrangThai((int)post('id'), (int)post('trangthai'), $myCn);
+            DatBan::capNhatTrangThai((int)post('id'), (int)post('trangthai'), $myCn, (int)$user['id']);
             flash('success', 'Đã cập nhật trạng thái yêu cầu đặt bàn.');
         } catch (RuntimeException $e) {
             flash('danger', $e->getMessage());
@@ -269,7 +361,8 @@ switch ($action) {
 
     // ===== BÁO CÁO =====
     case 'baocao':
-        $days = in_array((int)($_GET['days'] ?? 30), [7, 30, 90], true) ? (int)$_GET['days'] : 30;
+        $requestedDays = (int)($_GET['days'] ?? 30);
+        $days = in_array($requestedDays, [7, 30, 90], true) ? $requestedDays : 30;
         aview('baocao', [
             'days' => $days,
             'cnRev' => $isAdmin ? ThongKe::doanhThuTheoChiNhanh($days) : [],

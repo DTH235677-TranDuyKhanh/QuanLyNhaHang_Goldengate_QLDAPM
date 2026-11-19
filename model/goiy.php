@@ -14,6 +14,23 @@ class GoiY {
                   ON DUPLICATE KEY UPDATE soluong = soluong + 1, lancuoi = NOW()", [(int)$uid, (int)$monId]);
     }
 
+    public static function nhapLuotXemCookie($uid, array $monIds) {
+        $uid = (int)$uid;
+        if ($uid <= 0) throw new InvalidArgumentException('Tài khoản không hợp lệ.');
+
+        $monIds = array_values(array_unique(array_filter(array_map('intval', $monIds), fn($id) => $id > 0)));
+        $monIds = array_slice($monIds, 0, 20);
+        if (!$monIds) return 0;
+
+        $in = implode(',', array_fill(0, count($monIds), '?'));
+        return DB::exec(
+            "INSERT INTO luotxem_nguoidung (nguoidung_id, monan_id, soluong)
+             SELECT ?, id, 1 FROM monan WHERE id IN ($in)
+             ON DUPLICATE KEY UPDATE soluong = soluong + 1, lancuoi = NOW()",
+            array_merge([$uid], $monIds)
+        );
+    }
+
     public static function cho($uid, $cn, array $daXemCookie, $n = 4) {
         $bought = []; $viewed = [];
         if ($uid) {

@@ -109,6 +109,11 @@ class Voucher {
                          WHERE id = ? AND (gioi_han IS NULL OR da_dung < gioi_han)", [(int)$id]);
     }
 
+    public static function hoanLuotSuDung($id) {
+        return DB::exec("UPDATE voucher SET da_dung = da_dung - 1
+                         WHERE id = ? AND da_dung > 0", [(int)$id]);
+    }
+
     private static function parseDate($value) {
         $date = DateTimeImmutable::createFromFormat('!Y-m-d\TH:i', $value);
         $errors = DateTimeImmutable::getLastErrors();

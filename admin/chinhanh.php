@@ -12,7 +12,7 @@
         <h5 class="mb-3">Danh sách chi nhánh <span class="badge text-bg-light"><?= count($ds) ?></span></h5>
         <div class="table-responsive">
           <table class="table">
-            <thead><tr><th>Chi nhánh</th><th>Địa chỉ</th><th>Điện thoại</th><th>Giờ hoạt động</th><th>Trạng thái</th><th></th></tr></thead>
+            <thead><tr><th>Chi nhánh</th><th>Địa chỉ</th><th>Điện thoại</th><th>Giờ hoạt động</th><th>Sức chứa đặt bàn</th><th>Trạng thái</th><th></th></tr></thead>
             <tbody>
               <?php foreach ($ds as $c): ?>
                 <tr>
@@ -20,6 +20,7 @@
                   <td><?= e($c['diachi']) ?></td>
                   <td><?= e($c['sodienthoai'] ?: '—') ?></td>
                   <td class="text-nowrap"><?= substr($c['giomocua'], 0, 5) ?> – <?= substr($c['giodongcua'], 0, 5) ?></td>
+                  <td><?= (int)$c['suc_chua'] ?> khách / <?= (int)$c['thoi_luong_datban_phut'] ?> phút</td>
                   <td><span class="badge text-bg-<?= $c['trangthai'] ? 'success' : 'secondary' ?>"><?= $c['trangthai'] ? 'Đang hoạt động' : 'Tạm đóng' ?></span></td>
                   <td>
                     <div class="admin-table-actions">
@@ -32,7 +33,7 @@
                   </td>
                 </tr>
               <?php endforeach; ?>
-              <?php if (!$ds): ?><tr><td colspan="6" class="report-empty">Chưa có chi nhánh nào.</td></tr><?php endif; ?>
+              <?php if (!$ds): ?><tr><td colspan="7" class="report-empty">Chưa có chi nhánh nào.</td></tr><?php endif; ?>
             </tbody>
           </table>
         </div>
@@ -72,6 +73,20 @@
             </div>
           </div>
           <div class="form-text mt-2">Để đổi trạng thái mở/tạm đóng, dùng nút trong danh sách.</div>
+        </div>
+        <div class="admin-form-section">
+          <h5 class="admin-form-section-title">Đặt bàn</h5>
+          <div class="row g-3">
+            <div class="col-6">
+              <label class="form-label" for="branchCapacity">Sức chứa (khách)</label>
+              <input id="branchCapacity" type="number" class="form-control" name="suc_chua" min="1" max="10000" required value="<?= (int)($edit['suc_chua'] ?? 60) ?>">
+            </div>
+            <div class="col-6">
+              <label class="form-label" for="bookingDuration">Thời lượng (phút)</label>
+              <input id="bookingDuration" type="number" class="form-control" name="thoi_luong" min="30" max="480" step="15" required value="<?= (int)($edit['thoi_luong_datban_phut'] ?? 120) ?>">
+            </div>
+          </div>
+          <div class="form-text mt-2">Sức chứa được tính cho các đặt bàn đã xác nhận có thời gian dùng bàn bị chồng lấn.</div>
         </div>
         <div class="admin-form-actions">
           <button class="btn btn-gg btn-primary-action"><?= $edit ? 'Lưu thay đổi' : 'Tạo chi nhánh' ?></button>

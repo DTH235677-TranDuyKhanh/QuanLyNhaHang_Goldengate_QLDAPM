@@ -69,7 +69,7 @@ $imgPreview = !empty($m['hinhanh']) ? '../uploads/monan/' . rawurlencode($m['hin
               <label class="form-label" for="foodImageInput">Chọn ảnh<?= $m ? '' : ' <span class="admin-required">*</span>' ?></label>
               <input id="foodImageInput" type="file" class="form-control" name="hinh"
                      accept="image/jpeg,image/png,image/webp" <?= $m ? '' : 'required' ?>>
-              <div class="form-text">JPG, PNG hoặc WEBP; dung lượng tối đa 2 MB. Ảnh mới sẽ thay ảnh cũ.</div>
+              <div class="form-text">JPG, PNG hoặc WEBP. Ảnh mới sẽ thay ảnh cũ.</div>
             </div>
           </div>
         </div>
