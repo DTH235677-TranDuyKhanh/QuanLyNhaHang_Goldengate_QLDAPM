@@ -57,7 +57,7 @@
         </div>
         <div class="mb-3">
           <label class="form-label" for="branchPhone">Số điện thoại</label>
-          <input id="branchPhone" type="tel" class="form-control" name="sdt" maxlength="15" autocomplete="tel" value="<?= e($edit['sodienthoai'] ?? '') ?>" placeholder="028 1234 5678">
+          <input id="branchPhone" type="tel" class="form-control" name="sdt" maxlength="15" autocomplete="tel" pattern="[0-9+() .\-]{7,15}" value="<?= e($edit['sodienthoai'] ?? '') ?>" placeholder="028 1234 5678">
         </div>
         <div class="admin-form-section">
           <h5 class="admin-form-section-title">Giờ phục vụ</h5>
