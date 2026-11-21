@@ -20,7 +20,7 @@
     <?php elseif ($ton <= 0): ?>
       <div class="alert alert-secondary">Món này tạm hết tại chi nhánh đang chọn.</div>
     <?php else: ?>
-      <form method="post" action="index.php" class="d-flex gap-2 align-items-center">
+      <form method="post" action="index.php" class="d-flex gap-2 align-items-center" data-add-to-cart>
         <?= csrf_field() ?>
         <input type="hidden" name="action" value="chovaogio">
         <input type="hidden" name="id" value="<?= (int)$m['id'] ?>">

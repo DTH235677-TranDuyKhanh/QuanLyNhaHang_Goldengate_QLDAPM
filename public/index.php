@@ -80,14 +80,27 @@ switch ($action) {
         $m = MonAn::layTheoId((int)post('id'), $cnId);
         $sl = max(1, min(GioHang::MAX_MOI_MON, (int)post('soluong', '1')));
         if (!$m || !$m['trangthai'] || !$m['conphucvu']) {
-            flash('danger', 'Món này hiện không phục vụ tại chi nhánh đã chọn.');
+            $type = 'danger';
+            $message = 'Món này hiện không phục vụ tại chi nhánh đã chọn.';
         } elseif ((int)$m['soluongton'] <= 0) {
-            flash('danger', 'Món "' . $m['tenmon'] . '" tạm hết.');
+            $type = 'danger';
+            $message = 'Món "' . $m['tenmon'] . '" tạm hết.';
         } else {
             $tong = min((int)$m['soluongton'], GioHang::soLuong($m['id']) + $sl);
             GioHang::dat($m['id'], $tong);
-            flash('success', 'Đã thêm "' . $m['tenmon'] . '" vào giỏ hàng.');
+            $type = 'success';
+            $message = 'Đã thêm "' . $m['tenmon'] . '" vào giỏ hàng.';
         }
+        if (strtolower($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '') === 'xmlhttprequest') {
+            header('Content-Type: application/json; charset=utf-8');
+            echo json_encode([
+                'type' => $type,
+                'message' => $message,
+                'cart_count' => GioHang::dem(),
+            ]);
+            exit;
+        }
+        flash($type, $message);
         redirect(safe_back(post('back')));
 
     case 'giohang':

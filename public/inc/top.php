@@ -35,61 +35,61 @@
         <li class="nav-item"><a class="nav-link" href="index.php?action=sukien">Ưu đãi</a></li>
         <li class="nav-item"><a class="nav-link" href="index.php?action=tracuu">Tra cứu đơn</a></li>
       </ul>
+    </div>
 
-      <form class="nav-search my-3 my-xl-0 me-xl-auto" method="get" action="index.php" role="search">
-        <input type="hidden" name="action" value="timkiem">
-        <span class="nav-search-icon" aria-hidden="true">⌕</span>
-        <input class="form-control" name="q" aria-label="Tìm món ăn" placeholder="Bạn muốn thưởng thức món gì?" value="<?= e($_GET['q'] ?? '') ?>">
-        <button class="btn" type="submit">Tìm món</button>
-      </form>
+    <form class="nav-search my-3 my-xl-0 me-xl-auto" method="get" action="index.php" role="search">
+      <input type="hidden" name="action" value="timkiem">
+      <span class="nav-search-icon" aria-hidden="true">⌕</span>
+      <input class="form-control" name="q" aria-label="Tìm món ăn" placeholder="Tìm món ăn..." value="<?= e($_GET['q'] ?? '') ?>">
+      <button class="btn" type="submit">Tìm món</button>
+    </form>
 
-      <div class="nav-actions">
+    <div class="nav-actions">
+      <div class="dropdown">
+        <a class="nav-branch dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Chi nhánh: <?= e($cb['tenchinhanh'] ?? 'Chọn chi nhánh') ?>">
+          <span class="branch-pin" aria-hidden="true">⌖</span>
+          <span class="branch-copy"><small>CHI NHÁNH</small><strong><?= e($cb['tenchinhanh'] ?? 'Chọn chi nhánh') ?></strong></span>
+        </a>
+        <ul class="dropdown-menu dropdown-menu-end nav-menu branch-menu">
+          <?php foreach ($chinhanhs as $c): ?>
+            <li>
+              <form method="post" action="index.php">
+                <?= csrf_field() ?>
+                <input type="hidden" name="action" value="chonchinhanh">
+                <input type="hidden" name="id" value="<?= (int)$c['id'] ?>">
+                <input type="hidden" name="back" value="<?= e($here) ?>">
+                <button class="dropdown-item <?= (int)$c['id'] === (int)$cnId ? 'fw-bold active-branch' : '' ?>">
+                  <span><?= e($c['tenchinhanh']) ?></span>
+                  <?php if ((int)$c['id'] === (int)$cnId): ?><span class="branch-check">✓</span><?php endif; ?>
+                </button>
+              </form>
+            </li>
+          <?php endforeach; ?>
+        </ul>
+      </div>
+      <a class="nav-cart" href="index.php?action=giohang" aria-label="Giỏ hàng, <?= (int)$soGio ?> món">
+        <span class="cart-icon" aria-hidden="true">🛒</span><span>Giỏ hàng</span><span class="cart-count"><?= (int)$soGio ?></span>
+      </a>
+      <?php if ($user): ?>
         <div class="dropdown">
-          <a class="nav-branch dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-            <span class="branch-pin" aria-hidden="true">⌖</span>
-            <span class="branch-copy"><small>CHI NHÁNH</small><strong><?= e($cb['tenchinhanh'] ?? 'Chọn chi nhánh') ?></strong></span>
+          <a class="nav-account dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Tài khoản: <?= e($user['hoten']) ?>">
+            <span class="account-avatar" aria-hidden="true">👤</span><span class="account-name"><?= e($user['hoten']) ?></span>
           </a>
-          <ul class="dropdown-menu dropdown-menu-end nav-menu branch-menu">
-            <?php foreach ($chinhanhs as $c): ?>
-              <li>
-                <form method="post" action="index.php">
-                  <?= csrf_field() ?>
-                  <input type="hidden" name="action" value="chonchinhanh">
-                  <input type="hidden" name="id" value="<?= (int)$c['id'] ?>">
-                  <input type="hidden" name="back" value="<?= e($here) ?>">
-                  <button class="dropdown-item <?= (int)$c['id'] === (int)$cnId ? 'fw-bold active-branch' : '' ?>">
-                    <span><?= e($c['tenchinhanh']) ?></span>
-                    <?php if ((int)$c['id'] === (int)$cnId): ?><span class="branch-check">✓</span><?php endif; ?>
-                  </button>
-                </form>
-              </li>
-            <?php endforeach; ?>
+          <ul class="dropdown-menu dropdown-menu-end nav-menu">
+            <li><a class="dropdown-item" href="index.php?action=hoso">Tài khoản & địa chỉ</a></li>
+            <li><a class="dropdown-item" href="index.php?action=donhang">Đơn hàng của tôi</a></li>
+            <?php if ((int)$user['loai'] <= 2): ?><li><a class="dropdown-item" href="../admin/index.php">Trang quản trị</a></li><?php endif; ?>
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item" href="index.php?action=dangxuat">Đăng xuất</a></li>
           </ul>
         </div>
-        <a class="nav-cart" href="index.php?action=giohang" aria-label="Giỏ hàng, <?= (int)$soGio ?> món">
-          <span class="cart-icon" aria-hidden="true">🛒</span><span>Giỏ hàng</span><span class="cart-count"><?= (int)$soGio ?></span>
-        </a>
-        <?php if ($user): ?>
-          <div class="dropdown">
-            <a class="nav-account dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-              <span class="account-avatar" aria-hidden="true">👤</span><span class="account-name"><?= e($user['hoten']) ?></span>
-            </a>
-            <ul class="dropdown-menu dropdown-menu-end nav-menu">
-              <li><a class="dropdown-item" href="index.php?action=hoso">Tài khoản & địa chỉ</a></li>
-              <li><a class="dropdown-item" href="index.php?action=donhang">Đơn hàng của tôi</a></li>
-              <?php if ((int)$user['loai'] <= 2): ?><li><a class="dropdown-item" href="../admin/index.php">Trang quản trị</a></li><?php endif; ?>
-              <li><hr class="dropdown-divider"></li>
-              <li><a class="dropdown-item" href="index.php?action=dangxuat">Đăng xuất</a></li>
-            </ul>
-          </div>
-        <?php else: ?>
-          <a class="nav-login" href="index.php?action=dangnhap">Đăng nhập</a>
-          <a class="btn nav-register" href="index.php?action=dangky">Đăng ký <span aria-hidden="true">→</span></a>
-        <?php endif; ?>
-      </div>
+      <?php else: ?>
+        <a class="nav-login" href="index.php?action=dangnhap">Đăng nhập</a>
+        <a class="btn nav-register" href="index.php?action=dangky">Đăng ký <span aria-hidden="true">→</span></a>
+      <?php endif; ?>
     </div>
-  </div>
 </nav>
+<div class="cart-notifications position-fixed" id="cartNotifications" aria-live="polite" aria-atomic="false"></div>
 <main class="container py-4">
 <?php foreach (take_flash() as [$t, $msg]): ?>
   <div class="alert alert-<?= e($t) ?> alert-dismissible fade show"><?= e($msg) ?><button class="btn-close" data-bs-dismiss="alert"></button></div>

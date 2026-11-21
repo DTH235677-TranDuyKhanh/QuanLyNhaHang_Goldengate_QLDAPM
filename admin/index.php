@@ -68,26 +68,22 @@ switch ($action) {
         if (strlen($ten) > 100 || strlen($dc) > 255) { flash('danger', 'Tên chi nhánh hoặc địa chỉ vượt quá độ dài cho phép.'); redirect('index.php?action=chinhanh'); }
         if ($id && !ChiNhanh::laySo($id)) { flash('danger', 'Chi nhánh không tồn tại.'); redirect('index.php?action=chinhanh'); }
         $mo = post('mo', '10:00'); $dong = post('dong', '22:00');
-<<<<<<< HEAD
         if (!preg_match('/^(?:[01]\d|2[0-3]):[0-5]\d$/', $mo) || !preg_match('/^(?:[01]\d|2[0-3]):[0-5]\d$/', $dong)) {
             flash('danger', 'Giờ mở cửa và đóng cửa không hợp lệ.');
             redirect('index.php?action=chinhanh' . ($id ? '&edit=' . $id : ''));
         }
         $sdt = post('sdt');
-        if ($sdt !== '' && (!preg_match('/^[0-9+()\s.-]{7,15}$/', $sdt))) {
+        if ($sdt !== '' && !preg_match('/^[0-9+()\s.-]{7,15}$/', $sdt)) {
             flash('danger', 'Số điện thoại không hợp lệ.');
             redirect('index.php?action=chinhanh' . ($id ? '&edit=' . $id : ''));
         }
-        if ($id) ChiNhanh::sua($id, $ten, $dc, $sdt, $mo, $dong); else ChiNhanh::them($ten, $dc, $sdt, $mo, $dong);
-=======
         try {
-            if ($id) ChiNhanh::sua($id, $ten, $dc, post('sdt'), $mo, $dong, post('suc_chua'), post('thoi_luong'));
-            else ChiNhanh::them($ten, $dc, post('sdt'), $mo, $dong, post('suc_chua'), post('thoi_luong'));
+            if ($id) ChiNhanh::sua($id, $ten, $dc, $sdt, $mo, $dong, post('suc_chua'), post('thoi_luong'));
+            else ChiNhanh::them($ten, $dc, $sdt, $mo, $dong, post('suc_chua'), post('thoi_luong'));
         } catch (RuntimeException $e) {
             flash('danger', $e->getMessage());
             redirect('index.php?action=chinhanh' . ($id ? '&edit=' . $id : ''));
         }
->>>>>>> 5d6f6966b65e52b49be136b0b25b03d1e5be16fc
         flash('success', 'Đã lưu chi nhánh.');
         redirect('index.php?action=chinhanh');
     case 'doitrangthaicn':
