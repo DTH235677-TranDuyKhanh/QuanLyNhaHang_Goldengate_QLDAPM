@@ -80,7 +80,7 @@
             <li><a class="dropdown-item" href="index.php?action=donhang">Đơn hàng của tôi</a></li>
             <?php if ((int)$user['loai'] <= 2): ?><li><a class="dropdown-item" href="../admin/index.php">Trang quản trị</a></li><?php endif; ?>
             <li><hr class="dropdown-divider"></li>
-            <li><a class="dropdown-item" href="index.php?action=dangxuat">Đăng xuất</a></li>
+            <li><a class="dropdown-item" href="index.php?action=dangxuat" data-bs-toggle="modal" data-bs-target="#logoutConfirmModal" data-logout-url="index.php?action=dangxuat">Đăng xuất</a></li>
           </ul>
         </div>
       <?php else: ?>

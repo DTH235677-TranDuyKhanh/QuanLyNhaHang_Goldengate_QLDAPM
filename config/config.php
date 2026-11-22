@@ -3,7 +3,7 @@
 return [
     'db' => [
         'host' => 'localhost',
-        'port' => 3307, 
+        'port' => 3306, 
         'name' => 'goldengate',
         'user' => 'root',
         'pass' => '',          // XAMPP mặc định rỗng
