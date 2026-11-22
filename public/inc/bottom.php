@@ -159,24 +159,118 @@
     <path d="M5 12l7-7 7 7"></path>
   </svg>
 </button>
+<div class="modal fade" id="logoutConfirmModal" tabindex="-1" aria-labelledby="logoutConfirmLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="logoutConfirmLabel">Xác nhận đăng xuất</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Hủy"></button>
+      </div>
+      <div class="modal-body">
+        Bạn có chắc chắn muốn đăng xuất khỏi tài khoản này không?
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+        <a id="logoutConfirmButton" href="index.php?action=dangxuat" class="btn btn-danger">Đăng xuất</a>
+      </div>
+    </div>
+  </div>
+</div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-(function () {
-  var btn = document.getElementById('backToTop');
-  if (!btn) return;
-  function toggleBtn() {
-    if (window.scrollY > 260) {
-      btn.classList.add('show');
-    } else {
-      btn.classList.remove('show');
-    }
+  const logoutModal = document.getElementById('logoutConfirmModal');
+  if (logoutModal) {
+    logoutModal.addEventListener('show.bs.modal', (event) => {
+      const trigger = event.relatedTarget;
+      const url = trigger && trigger.dataset.logoutUrl;
+      const confirmButton = document.getElementById('logoutConfirmButton');
+      if (url && confirmButton) confirmButton.href = url;
+    });
   }
-  window.addEventListener('scroll', toggleBtn, { passive: true });
-  toggleBtn();
-  btn.addEventListener('click', function () {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+
+  document.addEventListener('submit', async (event) => {
+    const form = event.target;
+    if (!(form instanceof HTMLFormElement) || !form.matches('form[data-add-to-cart]')) return;
+
+    event.preventDefault();
+    const button = form.querySelector('button[type="submit"], button:not([type])');
+    if (button && button.disabled) return;
+    if (button) button.disabled = true;
+
+    const notify = (type, message) => {
+      const container = document.getElementById('cartNotifications');
+      if (!container) return;
+      while (container.firstChild) container.removeChild(container.firstChild);
+
+      const alert = document.createElement('div');
+      alert.className = `alert alert-${type} alert-dismissible fade show shadow`;
+      alert.setAttribute('role', type === 'danger' ? 'alert' : 'status');
+      alert.append(document.createTextNode(message));
+
+      const close = document.createElement('button');
+      close.type = 'button';
+      close.className = 'btn-close';
+      close.setAttribute('data-bs-dismiss', 'alert');
+      close.setAttribute('aria-label', 'Đóng');
+      alert.append(close);
+      container.append(alert);
+
+      window.setTimeout(() => {
+        if (alert.isConnected) bootstrap.Alert.getOrCreateInstance(alert).close();
+      }, 5000);
+    };
+
+    let response;
+    try {
+      response = await fetch(form.getAttribute('action'), {
+        method: 'POST',
+        body: new FormData(form),
+        headers: {
+          'Accept': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        }
+      });
+    } catch (error) {
+      notify('danger', 'Không thể kết nối để thêm món vào giỏ hàng. Vui lòng thử lại.');
+      if (button) button.disabled = false;
+      return;
+    }
+
+    let result;
+    try {
+      result = await response.json();
+    } catch (error) {
+      notify('danger', 'Không thể thêm món vào giỏ hàng. Vui lòng tải lại trang và thử lại.');
+      if (button) button.disabled = false;
+      return;
+    }
+
+    if (!response.ok) {
+      notify('danger', result.message || 'Không thể thêm món vào giỏ hàng. Vui lòng thử lại.');
+    } else {
+      notify(result.type, result.message);
+      const cart = document.querySelector('.nav-cart');
+      const count = cart && cart.querySelector('.cart-count');
+      if (count) {
+        count.textContent = result.cart_count;
+        cart.setAttribute('aria-label', `Giỏ hàng, ${result.cart_count} món`);
+      }
+    }
+    if (button) button.disabled = false;
   });
-})();
+
+  const backToTopButton = document.getElementById('backToTop');
+  if (backToTopButton) {
+    function toggleBackToTopButton() {
+      backToTopButton.classList.toggle('show', window.scrollY > 260);
+    }
+
+    window.addEventListener('scroll', toggleBackToTopButton, { passive: true });
+    toggleBackToTopButton();
+    backToTopButton.addEventListener('click', () => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
 </script>
 </body>
 </html>

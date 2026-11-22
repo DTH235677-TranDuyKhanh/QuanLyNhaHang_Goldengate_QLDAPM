@@ -18,7 +18,7 @@ function card_mon($m, $here, $lyDo = null) {
             <?php if ($ton <= 0): ?>
               <button class="btn btn-secondary btn-sm w-100" disabled>Tạm hết</button>
             <?php else: ?>
-              <form method="post" action="index.php">
+              <form method="post" action="index.php" data-add-to-cart>
                 <?= csrf_field() ?>
                 <input type="hidden" name="action" value="chovaogio">
                 <input type="hidden" name="id" value="<?= (int)$m['id'] ?>">

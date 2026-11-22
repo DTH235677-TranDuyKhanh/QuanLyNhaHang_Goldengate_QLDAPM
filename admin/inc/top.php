@@ -31,7 +31,7 @@
       </nav>
       <div class="admin-sidebar-footer">
         <a class="admin-nav-link" href="../public/index.php" target="_blank" rel="noopener">🌐 Xem website</a>
-        <a class="admin-nav-link" href="index.php?action=dangxuat">🚪 Đăng xuất</a>
+        <a class="admin-nav-link" href="index.php?action=dangxuat" data-bs-toggle="modal" data-bs-target="#logoutConfirmModal" data-logout-url="index.php?action=dangxuat">🚪 Đăng xuất</a>
       </div>
     </div>
   </aside>
