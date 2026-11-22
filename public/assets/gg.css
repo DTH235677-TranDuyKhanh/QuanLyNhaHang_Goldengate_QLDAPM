@@ -378,3 +378,58 @@ footer { background:var(--gg-dark); color:#bdb5a5; }
   *,*::before,*::after { scroll-behavior:auto!important; transition:none!important; animation:none!important; }
 }
 .price { color: var(--gg-gold-d); font-weight:700; }
+
+/* ── Back to Top Button ── */
+.back-to-top {
+  position: fixed;
+  right: 1.5rem;
+  bottom: 1.5rem;
+  z-index: 1030;
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  padding: 0;
+  border: 1.5px solid rgba(240,194,75,.65);
+  border-radius: 50%;
+  background: rgba(31,26,20,.92);
+  color: #f3ca69;
+  box-shadow: 0 8px 24px rgba(27,22,17,.28);
+  backdrop-filter: blur(8px);
+  cursor: pointer;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(14px);
+  transition: opacity .25s ease, visibility .25s ease, transform .25s ease, background-color .2s ease, color .2s ease, border-color .2s ease;
+}
+.back-to-top.show {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+.back-to-top:hover,
+.back-to-top:focus-visible {
+  background: var(--gg-gold);
+  border-color: var(--gg-gold);
+  color: #fff;
+  transform: translateY(-3px);
+  box-shadow: 0 12px 28px rgba(184,134,11,.35);
+  outline: none;
+}
+.back-to-top svg {
+  width: 20px;
+  height: 20px;
+  stroke: currentColor;
+  stroke-width: 2.5;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+@media (max-width: 767.98px) {
+  .back-to-top {
+    right: 1rem;
+    bottom: 1rem;
+    width: 42px;
+    height: 42px;
+  }
+}

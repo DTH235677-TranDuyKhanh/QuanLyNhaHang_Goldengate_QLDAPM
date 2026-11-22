@@ -153,6 +153,30 @@
     </div>
   </div>
 </footer>
+<button type="button" id="backToTop" class="back-to-top" aria-label="Quay lại đầu trang" title="Quay lại đầu trang">
+  <svg viewBox="0 0 24 24" aria-hidden="true">
+    <path d="M12 19V5"></path>
+    <path d="M5 12l7-7 7 7"></path>
+  </svg>
+</button>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+(function () {
+  var btn = document.getElementById('backToTop');
+  if (!btn) return;
+  function toggleBtn() {
+    if (window.scrollY > 260) {
+      btn.classList.add('show');
+    } else {
+      btn.classList.remove('show');
+    }
+  }
+  window.addEventListener('scroll', toggleBtn, { passive: true });
+  toggleBtn();
+  btn.addEventListener('click', function () {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+})();
+</script>
 </body>
 </html>
