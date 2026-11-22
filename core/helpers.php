@@ -99,6 +99,9 @@ function monan_img_url($mon) {
         'Gỏi cuốn tôm thịt' => 'goicuon.jpg',
         'Chả giò hải sản' => 'chagio.jpg',
         'Súp cua trứng bạc' => 'suptrungcua.jpg',
+        'Gỏi ngó sen tôm thịt' => 'goingosen.jpg',
+        'Nem nướng Nha Trang' => 'nemnuong.jpg',
+        'Mực chiên giòn sốt mayonnaise' => 'mucchiengion.jpg',
         'Cơm chiên dương châu' => 'comchienduongchau.jpg',
         'Bò lúc lắc' => 'boluclac.jpg',
         'Cá hồi sốt chanh dây' => 'cahoichanhday.jpg',
@@ -109,9 +112,13 @@ function monan_img_url($mon) {
         'Chè hạt sen long nhãn' => 'chehatsenlongnhan.jpg',
         'Bánh flan caramel' => 'banhflan.jpg',
         'Kem dừa' => 'kemdua.jpg',
+        'Chè khúc bạch trái cây' => 'chekhucbach.jpg',
+        'Panna cotta chanh dây' => 'pannacotta.jpg',
         'Trà đào cam sả' => 'tradaocamsa.jpg',
         'Nước ép cam' => 'nuoccam.jpg',
         'Cà phê sữa đá' => 'caphesua.jpg',
+        'Trà vải hoa hồng' => 'travai.jpg',
+        'Sinh tố bơ sữa dừa' => 'sinhtobo.jpg',
     ];
     $image = $images[$mon['tenmon'] ?? ''] ?? null;
     return $image ? '../hinhanhmonan/' . rawurlencode($image) : null;

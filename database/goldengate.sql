@@ -281,7 +281,14 @@ INSERT INTO monan (id,tenmon,mota,giaban,nhom_id) VALUES
 (13,'Kem dừa','Kem dừa béo thơm, dừa non, đậu phộng rang.',49000,4),
 (14,'Trà đào cam sả','Trà đào, cam vàng, sả tươi.',45000,5),
 (15,'Nước ép cam','Cam tươi vắt, không đường thêm.',50000,5),
-(16,'Cà phê sữa đá','Cà phê phin truyền thống.',39000,5);
+(16,'Cà phê sữa đá','Cà phê phin truyền thống.',39000,5),
+(17,'Gỏi ngó sen tôm thịt','Ngó sen giòn sần sật trộn tôm sú, thịt ba chỉ, rau răm, đậu phộng rang và nước mắm chua ngọt.',75000,1),
+(18,'Nem nướng Nha Trang','Nem thịt heo nướng thơm lừng ăn kèm bánh tráng, rau sống, đồ chua và nước chấm đặc biệt.',85000,1),
+(19,'Mực chiên giòn sốt mayonnaise','Mực tươi cắt khoanh tẩm bột chiên vàng rụm, chấm kèm sốt mayonnaise béo ngậy.',95000,1),
+(20,'Chè khúc bạch trái cây','Khúc bạch phô mai mềm béo, vải thiều, nhãn tươi và hạnh nhân rang thơm bùi.',52000,4),
+(21,'Panna cotta chanh dây','Kem sữa Ý mát lạnh sánh mịn phủ sốt chanh dây tươi chua ngọt dịu nhẹ.',48000,4),
+(22,'Trà vải hoa hồng','Trà ô long thanh mát kết hợp vải thiều ngọt dịu và hương hoa hồng nhẹ nhàng.',49000,5),
+(23,'Sinh tố bơ sữa dừa','Bơ sáp Đắk Lắk xay mịn cùng sữa đặc và nước cốt dừa béo thơm.',55000,5);
 
 INSERT INTO monan_chinhanh (chinhanh_id, monan_id, soluongton, conphucvu)
 SELECT c.id, m.id, 40, 1 FROM chinhanh c CROSS JOIN monan m;

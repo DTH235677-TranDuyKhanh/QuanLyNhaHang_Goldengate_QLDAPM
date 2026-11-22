@@ -153,6 +153,12 @@
     </div>
   </div>
 </footer>
+<button type="button" id="backToTop" class="back-to-top" aria-label="Quay lại đầu trang" title="Quay lại đầu trang">
+  <svg viewBox="0 0 24 24" aria-hidden="true">
+    <path d="M12 19V5"></path>
+    <path d="M5 12l7-7 7 7"></path>
+  </svg>
+</button>
 <div class="modal fade" id="logoutConfirmModal" tabindex="-1" aria-labelledby="logoutConfirmLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
@@ -193,6 +199,7 @@
 
     const notify = (type, message) => {
       const container = document.getElementById('cartNotifications');
+      if (!container) return;
       while (container.firstChild) container.removeChild(container.firstChild);
 
       const alert = document.createElement('div');
@@ -251,6 +258,19 @@
     }
     if (button) button.disabled = false;
   });
+
+  const backToTopButton = document.getElementById('backToTop');
+  if (backToTopButton) {
+    function toggleBackToTopButton() {
+      backToTopButton.classList.toggle('show', window.scrollY > 260);
+    }
+
+    window.addEventListener('scroll', toggleBackToTopButton, { passive: true });
+    toggleBackToTopButton();
+    backToTopButton.addEventListener('click', () => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
 </script>
 </body>
 </html>
