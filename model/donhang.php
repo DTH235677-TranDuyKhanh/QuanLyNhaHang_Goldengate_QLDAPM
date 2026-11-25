@@ -285,6 +285,8 @@ class DonHang {
         }
         if (!empty($order['voucher_id'])) Voucher::hoanLuotSuDung($order['voucher_id']);
     }
+
+    // Danh sách cho người dùng
     public static function cuaNguoiDung($uid) {
         return DB::all("SELECT d.*, c.tenchinhanh, v.ma AS voucher_ma
                         FROM donhang d JOIN chinhanh c ON c.id = d.chinhanh_id
