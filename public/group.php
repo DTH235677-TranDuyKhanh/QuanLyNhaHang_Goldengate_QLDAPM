@@ -4,4 +4,4 @@
   <?php foreach ($mons as $m) echo card_mon($m, $here); ?>
 </div>
 <?php if (!$mons): ?><div class="alert alert-info">Không có món nào phù hợp tại chi nhánh này.</div><?php endif; ?>
-<?php include 'inc/bottom.php'; ?>
+<?php include 'inc/bottom.php'; ?>   
